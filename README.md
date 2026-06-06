@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# IGC Tracker
+
+3D IGC flight replay viewer for paraglider tracks with Cesium terrain, satellite imagery, altitude-colored trails, and playback controls.
+
+## Features
+
+- Upload an `.igc` file directly in the browser.
+- Parse IGC `B` fixes locally; no backend upload is required.
+- Replay the flight progressively with a follow camera.
+- Autoplay loaded flights at `8x` speed.
+- Drag the map to orbit around the paraglider; scroll to zoom.
+- Seek through the flight with the progress slider.
+- Color the completed track from green to red based on altitude across the whole flight.
+- Show current altitude and vertical speed in `m/s`.
+- Draw a vertical projection line from the paraglider to the terrain/map surface.
+
+## Tech Stack
+
+- Next.js `16.2.7`
+- React `19.2.4`
+- TypeScript
+- CesiumJS
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000` and upload an `.igc` file.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Cesium Ion Token
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The app works without a Cesium ion token, but it falls back to OpenStreetMap imagery and no Cesium world terrain.
 
-## Learn More
+For satellite imagery and terrain, create `.env.local`:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+NEXT_PUBLIC_CESIUM_ION_TOKEN=your_token_here
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Then restart the dev server.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Do not commit `.env.local`; `.env*` files are ignored.
 
-## Deploy on Vercel
+## Scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run dev
+npm run lint
+npm run build
+npm run start
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Cesium static assets are copied into `public/cesium/` by:
+
+```bash
+npm run copy:cesium-assets
+```
+
+This also runs automatically after `npm install`. The generated `public/cesium/` directory is ignored and should not be committed.
+
+## Project Structure
+
+```text
+src/app/page.tsx                    App entry, renders FlightApp
+src/components/FlightApp.tsx         Owns loaded flight state
+src/components/FileUpload.tsx        Reads and parses local IGC files
+src/components/CesiumFlightViewer.tsx 3D replay, camera, track, marker, terrain projection
+src/components/PlaybackControls.tsx  Play, reset, speed, and seek controls
+src/lib/igcParser.ts                 IGC parser and flight stats
+src/lib/flightMath.ts                Distance and formatting helpers
+src/types/flight.ts                  Flight data types
+```
+
+## Verification
+
+Before handing off changes, run:
+
+```bash
+npm run lint
+npm run build
+```
+
+There is no test script yet.
