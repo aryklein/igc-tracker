@@ -253,7 +253,8 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     activeSegmentPositionsRef.current = [];
     shadowPositionsRef.current = [];
     setCurrentMs(0);
-    setIsPlaying(false);
+    setSpeed(16);
+    setIsPlaying(true);
 
     viewer.entities.removeAll();
     const firstPoint = flight.points[0];
