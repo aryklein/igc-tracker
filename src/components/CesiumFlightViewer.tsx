@@ -20,16 +20,8 @@ type InterpolatedPoint = {
   index: number;
 };
 
-type TrackChunk = {
-  endElapsedMs: number;
-  from: FlightPoint;
-  to: FlightPoint;
-  averageAltitude: number;
-};
-
 const VISUAL_TERRAIN_CLEARANCE_METERS = 8;
 const VARIO_WINDOW_MS = 10_000;
-const MAX_TRACK_CHUNKS = 600;
 
 declare global {
   interface Window {
@@ -113,39 +105,6 @@ function verticalSpeedAtElapsed(points: FlightPoint[], elapsedMs: number) {
   return (to.altitude - from.altitude) / elapsedSeconds;
 }
 
-function buildTrackChunks(points: FlightPoint[]): TrackChunk[] {
-  const segmentCount = points.length - 1;
-
-  if (segmentCount <= 0) {
-    return [];
-  }
-
-  const step = Math.max(1, Math.ceil(segmentCount / MAX_TRACK_CHUNKS));
-  const chunks: TrackChunk[] = [];
-
-  for (let startIndex = 0; startIndex < segmentCount; startIndex += step) {
-    const endIndex = Math.min(segmentCount, startIndex + step);
-    const from = points[startIndex];
-    const to = points[endIndex];
-    let altitudeTotal = 0;
-    let altitudeCount = 0;
-
-    for (let index = startIndex; index <= endIndex; index += 1) {
-      altitudeTotal += points[index].altitude;
-      altitudeCount += 1;
-    }
-
-    chunks.push({
-      endElapsedMs: to.elapsedMs,
-      from,
-      to,
-      averageAltitude: altitudeTotal / altitudeCount,
-    });
-  }
-
-  return chunks;
-}
-
 export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cesiumRef = useRef<CesiumModule | null>(null);
@@ -159,7 +118,6 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
   const activeSegmentPositionsRef = useRef<Cartesian3[]>([]);
   const activeSegmentColorRef = useRef<Color | undefined>(undefined);
   const shadowPositionsRef = useRef<Cartesian3[]>([]);
-  const trackChunksRef = useRef<TrackChunk[]>([]);
   const flightRef = useRef<ParsedFlight | null>(null);
   const elapsedRef = useRef(0);
   const lastFrameRef = useRef<number | null>(null);
@@ -209,13 +167,13 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
   const updateVisibleSegments = useCallback(
     (completedSegmentCount: number) => {
       const Cesium = cesiumRef.current;
-      const chunks = trackChunksRef.current;
+      const flightData = flightRef.current;
 
-      if (!Cesium) {
+      if (!Cesium || !flightData) {
         return;
       }
 
-      const nextVisibleCount = Math.max(0, Math.min(completedSegmentCount, chunks.length));
+      const nextVisibleCount = Math.max(0, Math.min(completedSegmentCount, segmentEntitiesRef.current.length));
       const previousVisibleCount = visibleSegmentCountRef.current;
 
       if (nextVisibleCount < previousVisibleCount) {
@@ -225,13 +183,14 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       }
 
       for (let index = previousVisibleCount; index < nextVisibleCount; index += 1) {
-        const chunk = chunks[index];
+        const previous = flightData.points[index];
+        const point = flightData.points[index + 1];
         const entity = segmentEntitiesRef.current[index];
 
         if (entity.polyline) {
           entity.polyline.positions = new Cesium.ConstantProperty([
-            Cesium.Cartesian3.fromDegrees(chunk.from.longitude, chunk.from.latitude, getRenderAltitude(chunk.from)),
-            Cesium.Cartesian3.fromDegrees(chunk.to.longitude, chunk.to.latitude, getRenderAltitude(chunk.to)),
+            Cesium.Cartesian3.fromDegrees(previous.longitude, previous.latitude, getRenderAltitude(previous)),
+            Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, getRenderAltitude(point)),
           ]);
         }
 
@@ -279,8 +238,8 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
         groundHeight,
       );
       const previous = flightData.points[Math.max(0, current.index - 1)];
-      const completedSegmentCount = trackChunksRef.current.findIndex((chunk) => chunk.endElapsedMs > current.point.elapsedMs);
-      const visibleChunkCount = completedSegmentCount === -1 ? trackChunksRef.current.length : completedSegmentCount;
+      const completedSegmentCount =
+        current.point.elapsedMs >= flightData.durationMs ? flightData.points.length - 1 : Math.max(0, current.index - 1);
 
       currentPositionRef.current = currentCartesian;
       activeSegmentPositionsRef.current = [
@@ -289,7 +248,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       ];
       activeSegmentColorRef.current = altitudeColor(Cesium, current.point.altitude, flightData);
       shadowPositionsRef.current = [groundCartesian, currentCartesian];
-      updateVisibleSegments(visibleChunkCount);
+      updateVisibleSegments(completedSegmentCount);
       updateCamera(current.point);
     },
     [altitudeColor, getRenderAltitude, updateCamera, updateVisibleSegments],
@@ -393,7 +352,6 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     lastFrameRef.current = null;
     visibleSegmentCountRef.current = 0;
     segmentEntitiesRef.current = [];
-    trackChunksRef.current = buildTrackChunks(flight.points);
     activeSegmentPositionsRef.current = [];
     shadowPositionsRef.current = [];
     setCurrentMs(0);
@@ -422,16 +380,20 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     ];
     setCurrentPoint(firstPoint);
 
-    for (const chunk of trackChunksRef.current) {
+    for (let index = 1; index < flight.points.length; index += 1) {
+      const previous = flight.points[index - 1];
+      const point = flight.points[index];
+      const averageAltitude = (previous.altitude + point.altitude) / 2;
+
       const segmentEntity = viewer.entities.add({
-        name: "Altitude colored flight track chunk",
+        name: "Altitude colored flight track segment",
         show: false,
         polyline: {
           clampToGround: false,
-          material: altitudeColor(Cesium, chunk.averageAltitude, flight),
+          material: altitudeColor(Cesium, averageAltitude, flight),
           positions: [
-            Cesium.Cartesian3.fromDegrees(chunk.from.longitude, chunk.from.latitude, getRenderAltitude(chunk.from)),
-            Cesium.Cartesian3.fromDegrees(chunk.to.longitude, chunk.to.latitude, getRenderAltitude(chunk.to)),
+            Cesium.Cartesian3.fromDegrees(previous.longitude, previous.latitude, getRenderAltitude(previous)),
+            Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, getRenderAltitude(point)),
           ],
           width: 4,
         },
