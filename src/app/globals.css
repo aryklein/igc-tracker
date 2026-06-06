@@ -226,8 +226,30 @@ button {
 }
 
 .flight-card strong {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
   font-size: 2.2rem;
   letter-spacing: -0.05em;
+}
+
+.flight-card em {
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 0.86rem;
+  font-style: normal;
+  letter-spacing: 0;
+}
+
+.flight-card em.climb {
+  color: #08111f;
+  background: #8dff5a;
+}
+
+.flight-card em.sink {
+  color: #ffffff;
+  background: #ff4f4f;
 }
 
 .playback-card {

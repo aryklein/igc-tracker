@@ -21,6 +21,7 @@ type InterpolatedPoint = {
 };
 
 const VISUAL_TERRAIN_CLEARANCE_METERS = 8;
+const VARIO_WINDOW_MS = 10_000;
 
 declare global {
   interface Window {
@@ -71,6 +72,15 @@ function findPointAtElapsed(points: FlightPoint[], elapsedMs: number): Interpola
   };
 }
 
+function verticalSpeedAtElapsed(points: FlightPoint[], elapsedMs: number) {
+  const windowStart = Math.max(0, elapsedMs - VARIO_WINDOW_MS);
+  const from = findPointAtElapsed(points, windowStart).point;
+  const to = findPointAtElapsed(points, elapsedMs).point;
+  const elapsedSeconds = Math.max(1, (to.elapsedMs - from.elapsedMs) / 1000);
+
+  return (to.altitude - from.altitude) / elapsedSeconds;
+}
+
 export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cesiumRef = useRef<CesiumModule | null>(null);
@@ -96,6 +106,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
   const [speed, setSpeed] = useState(1);
   const [currentMs, setCurrentMs] = useState(0);
   const [currentPoint, setCurrentPoint] = useState<FlightPoint | null>(null);
+  const [verticalSpeed, setVerticalSpeed] = useState(0);
 
   const altitudeColor = useCallback((Cesium: CesiumModule, altitude: number, flightData: ParsedFlight) => {
     const range = Math.max(1, flightData.maxAltitude - flightData.minAltitude);
@@ -274,7 +285,8 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     activeSegmentPositionsRef.current = [];
     shadowPositionsRef.current = [];
     setCurrentMs(0);
-    setSpeed(16);
+    setVerticalSpeed(0);
+    setSpeed(8);
     setIsPlaying(true);
 
     viewer.entities.removeAll();
@@ -347,10 +359,11 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       name: "Paraglider",
       position: new Cesium.CallbackPositionProperty(() => currentPositionRef.current, false),
       point: {
-        color: Cesium.Color.CYAN,
+        color: Cesium.Color.fromCssColorString("#00d9ff"),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
         outlineColor: Cesium.Color.WHITE,
         outlineWidth: 2,
-        pixelSize: 14,
+        pixelSize: 10,
       },
     });
 
@@ -438,6 +451,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
         updateTrack(current);
         setCurrentMs(elapsedRef.current);
         setCurrentPoint(current.point);
+        setVerticalSpeed(verticalSpeedAtElapsed(flightData.points, elapsedRef.current));
 
         if (elapsedRef.current >= flightData.durationMs) {
           isPlayingRef.current = false;
@@ -483,6 +497,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     updateTrack(first);
     setCurrentMs(0);
     setCurrentPoint(first.point);
+    setVerticalSpeed(0);
     setIsPlaying(false);
   }
 
@@ -499,6 +514,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     updateTrack(current);
     setCurrentMs(elapsedRef.current);
     setCurrentPoint(current.point);
+    setVerticalSpeed(verticalSpeedAtElapsed(flightData.points, elapsedRef.current));
 
     if (elapsedRef.current >= flightData.durationMs) {
       setIsPlaying(false);
@@ -519,7 +535,10 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
         <div className="hud">
           <div className="flight-card">
             <span>{flight.filename}</span>
-            <strong>{currentPoint ? `${Math.round(currentPoint.altitude)} m` : "-- m"}</strong>
+            <strong>
+              {currentPoint ? `${Math.round(currentPoint.altitude)} m` : "-- m"}
+              <em className={verticalSpeed >= 0 ? "climb" : "sink"}>{verticalSpeed.toFixed(1)} m/s</em>
+            </strong>
             <small>
               {formatDuration(flight.durationMs)} · {formatDistance(flight.distanceMeters)} · {Math.round(flight.minAltitude)}-
               {Math.round(flight.maxAltitude)} m
