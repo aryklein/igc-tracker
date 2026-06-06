@@ -34,7 +34,7 @@ export function FileUpload({ onFlightLoaded }: FileUploadProps) {
       <label className="upload-target">
         <span>Upload IGC Flight</span>
         <strong>Choose .igc file</strong>
-        <input accept=".igc,text/plain" type="file" onChange={handleChange} />
+        <input type="file" onChange={handleChange} />
       </label>
       {error ? <p className="upload-error">{error}</p> : null}
     </div>
