@@ -447,19 +447,62 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       return;
     }
 
-    let isDragging = false;
+    const activePointers = new Map<number, { x: number; y: number }>();
     let previousX = 0;
     let previousY = 0;
+    let previousPinchDistance: number | null = null;
+
+    canvas.style.touchAction = "none";
+
+    function updateCameraFromCurrentPoint() {
+      if (!flightRef.current) {
+        return;
+      }
+
+      const current = findPointAtElapsed(flightRef.current.points, elapsedRef.current).point;
+      updateCamera(current);
+    }
+
+    function getPinchDistance() {
+      const pointers = [...activePointers.values()];
+
+      if (pointers.length < 2) {
+        return null;
+      }
+
+      const deltaX = pointers[0].x - pointers[1].x;
+      const deltaY = pointers[0].y - pointers[1].y;
+
+      return Math.hypot(deltaX, deltaY);
+    }
 
     function handlePointerDown(event: PointerEvent) {
-      isDragging = true;
+      event.preventDefault();
+      activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
       previousX = event.clientX;
       previousY = event.clientY;
       canvas?.setPointerCapture(event.pointerId);
+      previousPinchDistance = getPinchDistance();
     }
 
     function handlePointerMove(event: PointerEvent) {
-      if (!isDragging || !flightRef.current) {
+      if (!activePointers.has(event.pointerId) || !flightRef.current) {
+        return;
+      }
+
+      event.preventDefault();
+      activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+      if (activePointers.size >= 2) {
+        const pinchDistance = getPinchDistance();
+
+        if (pinchDistance !== null && previousPinchDistance !== null && pinchDistance > 0) {
+          const zoomFactor = Math.max(0.75, Math.min(1.25, previousPinchDistance / pinchDistance));
+          orbitRef.current.range = Math.max(300, Math.min(35_000, orbitRef.current.range * zoomFactor));
+          updateCameraFromCurrentPoint();
+        }
+
+        previousPinchDistance = pinchDistance;
         return;
       }
 
@@ -470,14 +513,22 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
 
       orbitRef.current.heading -= deltaX * 0.006;
       orbitRef.current.pitch = Math.max(-1.45, Math.min(-0.15, orbitRef.current.pitch + deltaY * 0.004));
-
-      const current = findPointAtElapsed(flightRef.current.points, elapsedRef.current).point;
-      updateCamera(current);
+      updateCameraFromCurrentPoint();
     }
 
     function handlePointerUp(event: PointerEvent) {
-      isDragging = false;
-      canvas?.releasePointerCapture(event.pointerId);
+      activePointers.delete(event.pointerId);
+      previousPinchDistance = getPinchDistance();
+
+      if (activePointers.size === 1) {
+        const [remainingPointer] = activePointers.values();
+        previousX = remainingPointer.x;
+        previousY = remainingPointer.y;
+      }
+
+      if (canvas?.hasPointerCapture(event.pointerId)) {
+        canvas.releasePointerCapture(event.pointerId);
+      }
     }
 
     function handleWheel(event: WheelEvent) {
@@ -499,6 +550,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     canvas.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
+      canvas.style.touchAction = "";
       canvas.removeEventListener("pointerdown", handlePointerDown);
       canvas.removeEventListener("pointermove", handlePointerMove);
       canvas.removeEventListener("pointerup", handlePointerUp);
