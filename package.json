@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "copy:cesium-assets": "mkdir -p public/cesium && cp -R node_modules/cesium/Build/Cesium/Workers public/cesium/ && cp -R node_modules/cesium/Build/Cesium/Assets public/cesium/ && cp -R node_modules/cesium/Build/Cesium/Widgets public/cesium/ && cp -R node_modules/cesium/Build/Cesium/ThirdParty public/cesium/",
+    "copy:cesium-assets": "mkdir -p public/cesium && cp node_modules/cesium/Build/Cesium/Cesium.js public/cesium/ && cp -R node_modules/cesium/Build/Cesium/Workers public/cesium/ && cp -R node_modules/cesium/Build/Cesium/Assets public/cesium/ && cp -R node_modules/cesium/Build/Cesium/Widgets public/cesium/ && cp -R node_modules/cesium/Build/Cesium/ThirdParty public/cesium/",
     "postinstall": "npm run copy:cesium-assets"
   },
   "dependencies": {

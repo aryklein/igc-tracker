@@ -26,7 +26,31 @@ const VARIO_WINDOW_MS = 10_000;
 declare global {
   interface Window {
     CESIUM_BASE_URL?: string;
+    Cesium?: CesiumModule;
   }
+}
+
+function loadCesium() {
+  if (window.Cesium) {
+    return Promise.resolve(window.Cesium);
+  }
+
+  return new Promise<CesiumModule>((resolve, reject) => {
+    const existingScript = document.querySelector<HTMLScriptElement>('script[src="/cesium/Cesium.js"]');
+
+    if (existingScript) {
+      existingScript.addEventListener("load", () => (window.Cesium ? resolve(window.Cesium) : reject(new Error("Cesium did not initialize."))), { once: true });
+      existingScript.addEventListener("error", () => reject(new Error("Could not load Cesium.")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "/cesium/Cesium.js";
+    script.async = true;
+    script.addEventListener("load", () => (window.Cesium ? resolve(window.Cesium) : reject(new Error("Cesium did not initialize."))), { once: true });
+    script.addEventListener("error", () => reject(new Error("Could not load Cesium.")), { once: true });
+    document.head.append(script);
+  });
 }
 
 function findPointAtElapsed(points: FlightPoint[], elapsedMs: number): InterpolatedPoint {
@@ -240,7 +264,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
 
       try {
         window.CESIUM_BASE_URL = "/cesium/";
-        const Cesium = await import("cesium");
+        const Cesium = await loadCesium();
 
         if (cancelled || !containerRef.current) {
           return;
