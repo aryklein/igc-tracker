@@ -60,9 +60,16 @@ export function FileUpload({ onFlightLoaded }: FileUploadProps) {
     <div className="upload-card">
       <button className="upload-target" type="button" onClick={() => inputRef.current?.click()}>
         <span>Upload IGC Flight</span>
-        <strong>Choose .igc file</strong>
+        <strong>Choose IGC file from Files</strong>
       </button>
-      <input ref={inputRef} className="file-input" type="file" onChange={handleChange} />
+      <input
+        ref={inputRef}
+        accept=".igc,.IGC,text/plain,application/octet-stream"
+        className="file-input"
+        type="file"
+        onChange={handleChange}
+      />
+      <p className="upload-help">On mobile, choose Browse or Files and select your `.igc` file.</p>
       {status ? <p className="upload-status">{status}</p> : null}
       {error ? <p className="upload-error">{error}</p> : null}
     </div>

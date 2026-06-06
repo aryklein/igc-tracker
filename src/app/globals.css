@@ -146,8 +146,14 @@ button {
 }
 
 .upload-status,
+.upload-help,
 .upload-error {
   font-size: 0.9rem;
+}
+
+.upload-help {
+  color: var(--muted);
+  line-height: 1.45;
 }
 
 .upload-status {
