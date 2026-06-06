@@ -20,6 +20,8 @@ type InterpolatedPoint = {
   index: number;
 };
 
+const VISUAL_TERRAIN_CLEARANCE_METERS = 8;
+
 declare global {
   interface Window {
     CESIUM_BASE_URL?: string;
@@ -106,6 +108,25 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     return new Cesium.Color(1, 0.92 - (t - 0.5) * 1.7, 0.18 - (t - 0.5) * 0.24, 1);
   }, []);
 
+  const getRenderAltitude = useCallback((point: FlightPoint) => {
+    const Cesium = cesiumRef.current;
+    const viewer = viewerRef.current;
+    const flightAltitude = point.altitude + VISUAL_TERRAIN_CLEARANCE_METERS;
+
+    if (!Cesium || !viewer) {
+      return flightAltitude;
+    }
+
+    const cartographic = Cesium.Cartographic.fromDegrees(point.longitude, point.latitude);
+    const groundHeight = viewer.scene.globe.getHeight(cartographic);
+
+    if (groundHeight === undefined) {
+      return flightAltitude;
+    }
+
+    return Math.max(flightAltitude, groundHeight + VISUAL_TERRAIN_CLEARANCE_METERS);
+  }, []);
+
   const updateCamera = useCallback((point: FlightPoint) => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
@@ -114,10 +135,10 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       return;
     }
 
-    const target = Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, point.altitude);
+    const target = Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, getRenderAltitude(point));
     const { heading, pitch, range } = orbitRef.current;
     viewer.camera.lookAt(target, new Cesium.HeadingPitchRange(heading, pitch, range));
-  }, []);
+  }, [getRenderAltitude]);
 
   const updateTrack = useCallback(
     (current: InterpolatedPoint) => {
@@ -132,7 +153,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       const currentCartesian = Cesium.Cartesian3.fromDegrees(
         current.point.longitude,
         current.point.latitude,
-        current.point.altitude,
+        getRenderAltitude(current.point),
       );
       const groundCartographic = Cesium.Cartographic.fromDegrees(current.point.longitude, current.point.latitude);
       const groundHeight = viewer.scene.globe.getHeight(groundCartographic) ?? 0;
@@ -145,14 +166,14 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
 
       currentPositionRef.current = currentCartesian;
       activeSegmentPositionsRef.current = [
-        Cesium.Cartesian3.fromDegrees(previous.longitude, previous.latitude, previous.altitude),
+        Cesium.Cartesian3.fromDegrees(previous.longitude, previous.latitude, getRenderAltitude(previous)),
         currentCartesian,
       ];
       activeSegmentColorRef.current = altitudeColor(Cesium, current.point.altitude, flightData);
       shadowPositionsRef.current = [groundCartesian, currentCartesian];
       updateCamera(current.point);
     },
-    [altitudeColor, updateCamera],
+    [altitudeColor, getRenderAltitude, updateCamera],
   );
 
   useEffect(() => {
@@ -261,7 +282,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     const firstPosition = Cesium.Cartesian3.fromDegrees(
       firstPoint.longitude,
       firstPoint.latitude,
-      firstPoint.altitude,
+      getRenderAltitude(firstPoint),
     );
     const firstGroundCartographic = Cesium.Cartographic.fromDegrees(firstPoint.longitude, firstPoint.latitude);
     const firstGroundHeight = viewer.scene.globe.getHeight(firstGroundCartographic) ?? 0;
@@ -279,10 +300,6 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       const previous = flight.points[index - 1];
       const point = flight.points[index];
       const averageAltitude = (previous.altitude + point.altitude) / 2;
-      const segmentPositions = [
-        Cesium.Cartesian3.fromDegrees(previous.longitude, previous.latitude, previous.altitude),
-        Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, point.altitude),
-      ];
 
       viewer.entities.add({
         name: "Altitude colored flight track segment",
@@ -290,7 +307,13 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
           clampToGround: false,
           material: altitudeColor(Cesium, averageAltitude, flight),
           positions: new Cesium.CallbackProperty(
-            () => (elapsedRef.current >= point.elapsedMs ? segmentPositions : []),
+            () =>
+              elapsedRef.current >= point.elapsedMs
+                ? [
+                    Cesium.Cartesian3.fromDegrees(previous.longitude, previous.latitude, getRenderAltitude(previous)),
+                    Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, getRenderAltitude(point)),
+                  ]
+                : [],
             false,
           ),
           width: 4,
@@ -332,7 +355,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     });
 
     updateCamera(firstPoint);
-  }, [altitudeColor, flight, isReady, updateCamera]);
+  }, [altitudeColor, flight, getRenderAltitude, isReady, updateCamera]);
 
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -463,6 +486,25 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     setIsPlaying(false);
   }
 
+  function handleSeek(elapsedMs: number) {
+    const flightData = flightRef.current;
+
+    if (!flightData) {
+      return;
+    }
+
+    elapsedRef.current = Math.max(0, Math.min(flightData.durationMs, elapsedMs));
+    lastFrameRef.current = null;
+    const current = findPointAtElapsed(flightData.points, elapsedRef.current);
+    updateTrack(current);
+    setCurrentMs(elapsedRef.current);
+    setCurrentPoint(current.point);
+
+    if (elapsedRef.current >= flightData.durationMs) {
+      setIsPlaying(false);
+    }
+  }
+
   return (
     <section className="viewer-shell">
       <div ref={containerRef} className="cesium-container" />
@@ -490,6 +532,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
             speed={speed}
             onPlayPause={handlePlayPause}
             onReset={handleReset}
+            onSeek={handleSeek}
             onSpeedChange={setSpeed}
           />
         </div>

@@ -11,6 +11,7 @@ type PlaybackControlsProps = {
   speed: number;
   onPlayPause: () => void;
   onReset: () => void;
+  onSeek: (elapsedMs: number) => void;
   onSpeedChange: (speed: number) => void;
 };
 
@@ -21,10 +22,9 @@ export function PlaybackControls({
   speed,
   onPlayPause,
   onReset,
+  onSeek,
   onSpeedChange,
 }: PlaybackControlsProps) {
-  const progress = durationMs > 0 ? Math.min(100, (currentMs / durationMs) * 100) : 0;
-
   return (
     <div className="playback-card">
       <div className="playback-topline">
@@ -50,9 +50,18 @@ export function PlaybackControls({
           </button>
         ))}
       </fieldset>
-      <div className="progress-track" aria-hidden="true">
-        <div style={{ width: `${progress}%` }} />
-      </div>
+      <label className="progress-control">
+        <span>Flight progress</span>
+        <input
+          aria-label="Flight progress"
+          max={durationMs}
+          min={0}
+          step={1000}
+          type="range"
+          value={Math.min(currentMs, durationMs)}
+          onChange={(event) => onSeek(Number(event.target.value))}
+        />
+      </label>
     </div>
   );
 }

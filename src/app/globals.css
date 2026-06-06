@@ -265,17 +265,27 @@ button {
   background: var(--accent);
 }
 
-.progress-track {
-  height: 6px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+.progress-control {
+  display: grid;
+  gap: 6px;
 }
 
-.progress-track div {
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #ff7a1a, #fff176);
+.progress-control span {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.progress-control input {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: grab;
+}
+
+.progress-control input:active {
+  cursor: grabbing;
 }
 
 @media (max-width: 880px) {
