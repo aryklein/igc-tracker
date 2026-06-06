@@ -320,11 +320,27 @@ button {
   }
 
   .viewer-shell {
-    min-height: 68vh;
+    display: flex;
+    flex-direction: column;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  .cesium-container {
+    position: relative;
+    height: 62vh;
+    min-height: 420px;
+    overflow: hidden;
+    border-radius: 28px 28px 0 0;
   }
 
   .hud {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
     grid-template-columns: 1fr;
+    padding: 12px;
   }
 }
 
@@ -336,6 +352,12 @@ button {
   .intro-panel,
   .viewer-shell {
     border-radius: 20px;
+  }
+
+  .cesium-container {
+    height: 54vh;
+    min-height: 320px;
+    border-radius: 20px 20px 0 0;
   }
 
   .intro-panel {
