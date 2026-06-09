@@ -166,13 +166,6 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
 
   const updateVisibleSegments = useCallback(
     (completedSegmentCount: number) => {
-      const Cesium = cesiumRef.current;
-      const flightData = flightRef.current;
-
-      if (!Cesium || !flightData) {
-        return;
-      }
-
       const nextVisibleCount = Math.max(0, Math.min(completedSegmentCount, segmentEntitiesRef.current.length));
       const previousVisibleCount = visibleSegmentCountRef.current;
 
@@ -183,23 +176,14 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       }
 
       for (let index = previousVisibleCount; index < nextVisibleCount; index += 1) {
-        const previous = flightData.points[index];
-        const point = flightData.points[index + 1];
         const entity = segmentEntitiesRef.current[index];
-
-        if (entity.polyline) {
-          entity.polyline.positions = new Cesium.ConstantProperty([
-            Cesium.Cartesian3.fromDegrees(previous.longitude, previous.latitude, getRenderAltitude(previous)),
-            Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, getRenderAltitude(point)),
-          ]);
-        }
 
         entity.show = true;
       }
 
       visibleSegmentCountRef.current = nextVisibleCount;
     },
-    [getRenderAltitude],
+    [],
   );
 
   const updateCamera = useCallback((point: FlightPoint) => {
@@ -384,6 +368,10 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       const previous = flight.points[index - 1];
       const point = flight.points[index];
       const averageAltitude = (previous.altitude + point.altitude) / 2;
+      const segmentPositions = [
+        Cesium.Cartesian3.fromDegrees(previous.longitude, previous.latitude, getRenderAltitude(previous)),
+        Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, getRenderAltitude(point)),
+      ];
 
       const segmentEntity = viewer.entities.add({
         name: "Altitude colored flight track segment",
@@ -391,10 +379,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
         polyline: {
           clampToGround: false,
           material: altitudeColor(Cesium, averageAltitude, flight),
-          positions: [
-            Cesium.Cartesian3.fromDegrees(previous.longitude, previous.latitude, getRenderAltitude(previous)),
-            Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, getRenderAltitude(point)),
-          ],
+          positions: segmentPositions,
           width: 4,
         },
       });
