@@ -16,7 +16,7 @@ export function FlightApp() {
           <h1>Replay your paraglider flight in 3D.</h1>
           <p className="intro-copy">A personal project by Ary Kleinerman.</p>
         </div>
-        <FileUpload onFlightLoaded={setFlight} />
+        <FileUpload flight={flight} onFlightLoaded={setFlight} />
       </aside>
       <CesiumFlightViewer flight={flight} />
     </main>
