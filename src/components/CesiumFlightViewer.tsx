@@ -132,6 +132,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
   const [speed, setSpeed] = useState(1);
   const [currentMs, setCurrentMs] = useState(0);
   const [currentPoint, setCurrentPoint] = useState<FlightPoint | null>(null);
+  const [currentAgl, setCurrentAgl] = useState<number | null>(null);
   const [verticalSpeed, setVerticalSpeed] = useState(0);
 
   const altitudeColor = useCallback((Cesium: CesiumModule, altitude: number, flightData: ParsedFlight) => {
@@ -143,6 +144,17 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     }
 
     return new Cesium.Color(1, 0.92 - (t - 0.5) * 1.7, 0.18 - (t - 0.5) * 0.24, 1);
+  }, []);
+
+  const altitudeCssColor = useCallback((altitude: number, flightData: ParsedFlight) => {
+    const range = Math.max(1, flightData.maxAltitude - flightData.minAltitude);
+    const t = Math.max(0, Math.min(1, (altitude - flightData.minAltitude) / range));
+
+    if (t < 0.5) {
+      return `rgb(${Math.round(t * 2 * 255)}, 235, 46)`;
+    }
+
+    return `rgb(255, ${Math.max(0, Math.round(235 - (t - 0.5) * 434))}, 0)`;
   }, []);
 
   const getRenderAltitude = useCallback((point: FlightPoint) => {
@@ -215,11 +227,12 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
         getRenderAltitude(current.point),
       );
       const groundCartographic = Cesium.Cartographic.fromDegrees(current.point.longitude, current.point.latitude);
-      const groundHeight = viewer.scene.globe.getHeight(groundCartographic) ?? 0;
+      const groundHeight = viewer.scene.globe.getHeight(groundCartographic);
+      const groundAltitude = groundHeight ?? 0;
       const groundCartesian = Cesium.Cartesian3.fromDegrees(
         current.point.longitude,
         current.point.latitude,
-        groundHeight,
+        groundAltitude,
       );
       const previous = flightData.points[Math.max(0, current.index - 1)];
       const completedSegmentCount =
@@ -232,6 +245,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       ];
       activeSegmentColorRef.current = altitudeColor(Cesium, current.point.altitude, flightData);
       shadowPositionsRef.current = [groundCartesian, currentCartesian];
+      setCurrentAgl(groundHeight === undefined ? null : Math.max(0, current.point.altitude - groundHeight));
       updateVisibleSegments(completedSegmentCount);
       updateCamera(current.point);
     },
@@ -339,6 +353,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     activeSegmentPositionsRef.current = [];
     shadowPositionsRef.current = [];
     setCurrentMs(0);
+    setCurrentAgl(null);
     setVerticalSpeed(0);
     speedRef.current = 8;
     isPlayingRef.current = true;
@@ -353,16 +368,18 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       getRenderAltitude(firstPoint),
     );
     const firstGroundCartographic = Cesium.Cartographic.fromDegrees(firstPoint.longitude, firstPoint.latitude);
-    const firstGroundHeight = viewer.scene.globe.getHeight(firstGroundCartographic) ?? 0;
+    const firstGroundHeight = viewer.scene.globe.getHeight(firstGroundCartographic);
+    const firstGroundAltitude = firstGroundHeight ?? 0;
 
     currentPositionRef.current = firstPosition;
     activeSegmentPositionsRef.current = [firstPosition, firstPosition];
     activeSegmentColorRef.current = altitudeColor(Cesium, firstPoint.altitude, flight);
     shadowPositionsRef.current = [
-      Cesium.Cartesian3.fromDegrees(firstPoint.longitude, firstPoint.latitude, firstGroundHeight),
+      Cesium.Cartesian3.fromDegrees(firstPoint.longitude, firstPoint.latitude, firstGroundAltitude),
       firstPosition,
     ];
     setCurrentPoint(firstPoint);
+    setCurrentAgl(firstGroundHeight === undefined ? null : Math.max(0, firstPoint.altitude - firstGroundHeight));
 
     for (let index = 1; index < flight.points.length; index += 1) {
       const previous = flight.points[index - 1];
@@ -652,10 +669,18 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
         <div className="hud">
           <div className="flight-card">
             <span>{flight.filename}</span>
-            <strong>
-              {currentPoint ? `${Math.round(currentPoint.altitude)} m` : "-- m"}
+            <div className="flight-live-stats">
+              <div className="altitude-stack">
+                <strong
+                  className="altitude-value"
+                  style={currentPoint ? { color: altitudeCssColor(currentPoint.altitude, flight) } : undefined}
+                >
+                  {currentPoint ? `${Math.round(currentPoint.altitude)} m` : "-- m"}
+                </strong>
+                <span className="agl-value">AGL {currentAgl === null ? "--" : Math.round(currentAgl)} m</span>
+              </div>
               <em className={verticalSpeed >= 0 ? "climb" : "sink"}>{verticalSpeed.toFixed(1)} m/s</em>
-            </strong>
+            </div>
             <small>
               {formatDuration(flight.durationMs)} · {formatDistance(flight.distanceMeters)} · {Math.round(flight.minAltitude)}-
               {Math.round(flight.maxAltitude)} m
