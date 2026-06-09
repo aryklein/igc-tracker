@@ -21,8 +21,6 @@ type InterpolatedPoint = {
 
 const VISUAL_TERRAIN_CLEARANCE_METERS = 8;
 const VARIO_WINDOW_MS = 10_000;
-const LANDING_SEGMENT_REFRESH_WINDOW_MS = 120_000;
-const LANDING_SEGMENT_REFRESH_BATCH_SIZE = 8;
 
 declare global {
   interface Window {
@@ -119,13 +117,14 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
   const activeSegmentPositionsRef = useRef<Cartesian3[]>([]);
   const activeSegmentColorRef = useRef<Color | undefined>(undefined);
   const shadowPositionsRef = useRef<Cartesian3[]>([]);
+  const groundHeightsRef = useRef<number[]>([]);
+  const renderPositionsRef = useRef<Cartesian3[]>([]);
   const flightRef = useRef<ParsedFlight | null>(null);
   const elapsedRef = useRef(0);
   const lastFrameRef = useRef<number | null>(null);
   const isPlayingRef = useRef(false);
   const speedRef = useRef(1);
   const visibleSegmentCountRef = useRef(0);
-  const landingSegmentRefreshIndexRef = useRef<number | null>(null);
   const orbitRef = useRef({ heading: 0, pitch: -0.75, range: 4500 });
 
   const [isReady, setIsReady] = useState(false);
@@ -159,16 +158,18 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     return `rgb(255, ${Math.max(0, Math.round(235 - (t - 0.5) * 434))}, 0)`;
   }, []);
 
-  const getRenderAltitude = useCallback((point: FlightPoint) => {
+  const getRenderAltitude = useCallback((point: FlightPoint, sampledGroundHeight?: number) => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
+    let groundHeight = sampledGroundHeight;
 
-    if (!Cesium || !viewer) {
-      return point.altitude;
+    if (groundHeight === undefined) {
+      if (!Cesium || !viewer) {
+        return point.altitude;
+      }
+
+      groundHeight = viewer.scene.globe.getHeight(Cesium.Cartographic.fromDegrees(point.longitude, point.latitude));
     }
-
-    const cartographic = Cesium.Cartographic.fromDegrees(point.longitude, point.latitude);
-    const groundHeight = viewer.scene.globe.getHeight(cartographic);
 
     if (groundHeight === undefined) {
       return point.altitude;
@@ -179,6 +180,46 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
 
     return groundHeight + agl + visualClearance;
   }, []);
+
+  const getPointRenderPosition = useCallback(
+    (Cesium: CesiumModule, flightData: ParsedFlight, index: number) => {
+      const cachedPosition = renderPositionsRef.current[index];
+
+      if (cachedPosition) {
+        return cachedPosition;
+      }
+
+      const point = flightData.points[index];
+
+      return Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, getRenderAltitude(point));
+    },
+    [getRenderAltitude],
+  );
+
+  const getCurrentRenderPosition = useCallback(
+    (Cesium: CesiumModule, flightData: ParsedFlight, current: InterpolatedPoint) => {
+      if (current.index <= 0) {
+        return getPointRenderPosition(Cesium, flightData, 0);
+      }
+
+      if (current.point.elapsedMs >= flightData.durationMs) {
+        return getPointRenderPosition(Cesium, flightData, flightData.points.length - 1);
+      }
+
+      const previous = flightData.points[current.index - 1];
+      const next = flightData.points[current.index];
+      const segmentDuration = Math.max(1, next.elapsedMs - previous.elapsedMs);
+      const t = Math.max(0, Math.min(1, (current.point.elapsedMs - previous.elapsedMs) / segmentDuration));
+
+      return Cesium.Cartesian3.lerp(
+        getPointRenderPosition(Cesium, flightData, current.index - 1),
+        getPointRenderPosition(Cesium, flightData, current.index),
+        t,
+        new Cesium.Cartesian3(),
+      );
+    },
+    [getPointRenderPosition],
+  );
 
   const updateVisibleSegments = useCallback(
     (completedSegmentCount: number) => {
@@ -202,55 +243,54 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     [],
   );
 
-  const updateCamera = useCallback((point: FlightPoint) => {
+  const updateCamera = useCallback((target: Cartesian3 | undefined) => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
 
-    if (!Cesium || !viewer) {
+    if (!Cesium || !viewer || !target) {
       return;
     }
 
-    const target = Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, getRenderAltitude(point));
     const { heading, pitch, range } = orbitRef.current;
     viewer.camera.lookAt(target, new Cesium.HeadingPitchRange(heading, pitch, range));
-  }, [getRenderAltitude]);
+  }, []);
 
-  const refreshLandingSegments = useCallback(() => {
-    const Cesium = cesiumRef.current;
-    const flightData = flightRef.current;
-
-    if (!Cesium || !flightData) {
-      return;
-    }
-
-    if (landingSegmentRefreshIndexRef.current === null) {
-      const refreshStart = Math.max(0, flightData.durationMs - LANDING_SEGMENT_REFRESH_WINDOW_MS);
-      landingSegmentRefreshIndexRef.current = Math.max(
-        0,
-        flightData.points.findIndex((point) => point.elapsedMs >= refreshStart) - 1,
+  const prepareRenderPositions = useCallback(
+    async (Cesium: CesiumModule, viewer: Viewer, flightData: ParsedFlight) => {
+      const cartographics = flightData.points.map((point) =>
+        Cesium.Cartographic.fromDegrees(point.longitude, point.latitude),
       );
-    }
 
-    const endIndex = segmentEntitiesRef.current.length;
-    const batchEnd = Math.min(endIndex, landingSegmentRefreshIndexRef.current + LANDING_SEGMENT_REFRESH_BATCH_SIZE);
+      let sampledTerrain = false;
 
-    for (let index = landingSegmentRefreshIndexRef.current; index < batchEnd; index += 1) {
-      const entity = segmentEntitiesRef.current[index];
-      const previous = flightData.points[index];
-      const point = flightData.points[index + 1];
-
-      if (!entity?.polyline || !previous || !point) {
-        continue;
+      try {
+        if (viewer.terrainProvider.availability) {
+          await Cesium.sampleTerrainMostDetailed(viewer.terrainProvider, cartographics);
+          sampledTerrain = true;
+        }
+      } catch {
+        // Fall back to currently loaded terrain heights below.
       }
 
-      entity.polyline.positions = new Cesium.ConstantProperty([
-        Cesium.Cartesian3.fromDegrees(previous.longitude, previous.latitude, getRenderAltitude(previous)),
-        Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, getRenderAltitude(point)),
-      ]);
-    }
+      const groundHeights = cartographics.map((cartographic) => {
+        if (sampledTerrain && Number.isFinite(cartographic.height)) {
+          return cartographic.height;
+        }
 
-    landingSegmentRefreshIndexRef.current = batchEnd >= endIndex ? endIndex : batchEnd;
-  }, [getRenderAltitude]);
+        return viewer.scene.globe.getHeight(cartographic) ?? (Number.isFinite(cartographic.height) ? cartographic.height : 0);
+      });
+
+      groundHeightsRef.current = groundHeights;
+      renderPositionsRef.current = flightData.points.map((point, index) =>
+        Cesium.Cartesian3.fromDegrees(
+          point.longitude,
+          point.latitude,
+          getRenderAltitude(point, groundHeights[index]),
+        ),
+      );
+    },
+    [getRenderAltitude],
+  );
 
   const updateTrack = useCallback(
     (current: InterpolatedPoint) => {
@@ -262,24 +302,29 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
         return;
       }
 
-      const currentCartesian = Cesium.Cartesian3.fromDegrees(
-        current.point.longitude,
-        current.point.latitude,
-        getRenderAltitude(current.point),
-      );
+      const currentCartesian = getCurrentRenderPosition(Cesium, flightData, current);
       const groundCartographic = Cesium.Cartographic.fromDegrees(current.point.longitude, current.point.latitude);
-      const groundHeight = viewer.scene.globe.getHeight(groundCartographic);
+      const previous = flightData.points[Math.max(0, current.index - 1)];
+      const next = flightData.points[Math.min(current.index, flightData.points.length - 1)];
+      const segmentDuration = Math.max(1, next.elapsedMs - previous.elapsedMs);
+      const segmentT = Math.max(0, Math.min(1, (current.point.elapsedMs - previous.elapsedMs) / segmentDuration));
+      const previousGroundHeight = groundHeightsRef.current[Math.max(0, current.index - 1)];
+      const nextGroundHeight = groundHeightsRef.current[Math.min(current.index, groundHeightsRef.current.length - 1)];
+      const sampledGroundHeight =
+        previousGroundHeight === undefined || nextGroundHeight === undefined
+          ? undefined
+          : previousGroundHeight + (nextGroundHeight - previousGroundHeight) * segmentT;
+      const groundHeight = sampledGroundHeight ?? viewer.scene.globe.getHeight(groundCartographic);
       const groundAltitude = groundHeight ?? 0;
       const groundCartesian = Cesium.Cartesian3.fromDegrees(
         current.point.longitude,
         current.point.latitude,
         groundAltitude,
       );
-      const previous = flightData.points[Math.max(0, current.index - 1)];
       const completedSegmentCount =
         current.point.elapsedMs >= flightData.durationMs ? flightData.points.length - 1 : Math.max(0, current.index - 1);
       const activeSegmentPositions = [
-        Cesium.Cartesian3.fromDegrees(previous.longitude, previous.latitude, getRenderAltitude(previous)),
+        getPointRenderPosition(Cesium, flightData, Math.max(0, current.index - 1)),
         currentCartesian,
       ];
 
@@ -288,11 +333,8 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       activeSegmentColorRef.current = altitudeColor(Cesium, current.point.altitude, flightData);
       shadowPositionsRef.current = [groundCartesian, currentCartesian];
       setCurrentAgl(groundHeight === undefined ? null : Math.max(0, current.point.altitude - groundHeight));
-      updateVisibleSegments(completedSegmentCount);
 
-      if (current.point.elapsedMs >= flightData.durationMs - LANDING_SEGMENT_REFRESH_WINDOW_MS) {
-        refreshLandingSegments();
-      }
+      updateVisibleSegments(completedSegmentCount);
 
       if (current.point.elapsedMs >= flightData.durationMs) {
         const finalSegment = segmentEntitiesRef.current.at(-1);
@@ -302,9 +344,9 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
         }
       }
 
-      updateCamera(current.point);
+      updateCamera(currentCartesian);
     },
-    [altitudeColor, getRenderAltitude, refreshLandingSegments, updateCamera, updateVisibleSegments],
+    [altitudeColor, getCurrentRenderPosition, getPointRenderPosition, updateCamera, updateVisibleSegments],
   );
 
   useEffect(() => {
@@ -395,107 +437,128 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
   useEffect(() => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
+    let cancelled = false;
 
     if (!isReady || !Cesium || !viewer || !flight) {
       return;
     }
 
-    flightRef.current = flight;
-    elapsedRef.current = 0;
-    lastFrameRef.current = null;
-    visibleSegmentCountRef.current = 0;
-    landingSegmentRefreshIndexRef.current = null;
-    segmentEntitiesRef.current = [];
-    activeSegmentPositionsRef.current = [];
-    shadowPositionsRef.current = [];
-    setCurrentMs(0);
-    setCurrentAgl(null);
-    setVerticalSpeed(0);
-    speedRef.current = 8;
-    isPlayingRef.current = true;
-    setSpeed(8);
-    setIsPlaying(true);
+    const cesiumInstance = Cesium;
+    const viewerInstance = viewer;
+    const flightData = flight;
 
-    viewer.entities.removeAll();
-    const firstPoint = flight.points[0];
-    const firstPosition = Cesium.Cartesian3.fromDegrees(
-      firstPoint.longitude,
-      firstPoint.latitude,
-      getRenderAltitude(firstPoint),
-    );
-    const firstGroundCartographic = Cesium.Cartographic.fromDegrees(firstPoint.longitude, firstPoint.latitude);
-    const firstGroundHeight = viewer.scene.globe.getHeight(firstGroundCartographic);
-    const firstGroundAltitude = firstGroundHeight ?? 0;
+    async function setupFlight() {
+      flightRef.current = flightData;
+      elapsedRef.current = 0;
+      lastFrameRef.current = null;
+      visibleSegmentCountRef.current = 0;
+      segmentEntitiesRef.current = [];
+      activeSegmentPositionsRef.current = [];
+      shadowPositionsRef.current = [];
+      groundHeightsRef.current = [];
+      renderPositionsRef.current = [];
+      setCurrentMs(0);
+      setCurrentAgl(null);
+      setVerticalSpeed(0);
+      speedRef.current = 8;
+      isPlayingRef.current = false;
+      setSpeed(8);
+      setIsPlaying(false);
 
-    currentPositionRef.current = firstPosition;
-    activeSegmentPositionsRef.current = [firstPosition, firstPosition];
-    activeSegmentColorRef.current = altitudeColor(Cesium, firstPoint.altitude, flight);
-    shadowPositionsRef.current = [
-      Cesium.Cartesian3.fromDegrees(firstPoint.longitude, firstPoint.latitude, firstGroundAltitude),
-      firstPosition,
-    ];
-    setCurrentPoint(firstPoint);
-    setCurrentAgl(firstGroundHeight === undefined ? null : Math.max(0, firstPoint.altitude - firstGroundHeight));
+      viewerInstance.entities.removeAll();
+      await prepareRenderPositions(cesiumInstance, viewerInstance, flightData);
 
-    for (let index = 1; index < flight.points.length; index += 1) {
-      const previous = flight.points[index - 1];
-      const point = flight.points[index];
-      const averageAltitude = (previous.altitude + point.altitude) / 2;
-      const segmentPositions = [
-        Cesium.Cartesian3.fromDegrees(previous.longitude, previous.latitude, getRenderAltitude(previous)),
-        Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, getRenderAltitude(point)),
+      if (cancelled) {
+        return;
+      }
+
+      const firstPoint = flightData.points[0];
+      const firstPosition = getPointRenderPosition(cesiumInstance, flightData, 0);
+      const firstGroundHeight = groundHeightsRef.current[0];
+      const firstGroundAltitude = firstGroundHeight ?? 0;
+
+      currentPositionRef.current = firstPosition;
+      activeSegmentPositionsRef.current = [firstPosition, firstPosition];
+      activeSegmentColorRef.current = altitudeColor(cesiumInstance, firstPoint.altitude, flightData);
+      shadowPositionsRef.current = [
+        cesiumInstance.Cartesian3.fromDegrees(firstPoint.longitude, firstPoint.latitude, firstGroundAltitude),
+        firstPosition,
       ];
+      setCurrentPoint(firstPoint);
+      setCurrentAgl(firstGroundHeight === undefined ? null : Math.max(0, firstPoint.altitude - firstGroundHeight));
 
-      const segmentEntity = viewer.entities.add({
-        name: "Altitude colored flight track segment",
-        show: false,
+      for (let index = 1; index < flightData.points.length; index += 1) {
+        const previous = flightData.points[index - 1];
+        const point = flightData.points[index];
+        const averageAltitude = (previous.altitude + point.altitude) / 2;
+        const segmentPositions = [
+          getPointRenderPosition(cesiumInstance, flightData, index - 1),
+          getPointRenderPosition(cesiumInstance, flightData, index),
+        ];
+
+        const segmentEntity = viewerInstance.entities.add({
+          name: "Altitude colored flight track segment",
+          show: false,
+          polyline: {
+            clampToGround: false,
+            material: altitudeColor(cesiumInstance, averageAltitude, flightData),
+            positions: segmentPositions,
+            width: 4,
+          },
+        });
+
+        segmentEntitiesRef.current.push(segmentEntity);
+      }
+
+      activeSegmentRef.current = viewerInstance.entities.add({
+        name: "Active altitude colored flight track segment",
         polyline: {
           clampToGround: false,
-          material: altitudeColor(Cesium, averageAltitude, flight),
-          positions: segmentPositions,
+          material: new cesiumInstance.ColorMaterialProperty(
+            new cesiumInstance.CallbackProperty(() => activeSegmentColorRef.current, false),
+          ),
+          positions: new cesiumInstance.CallbackProperty(() => activeSegmentPositionsRef.current, false),
           width: 4,
         },
       });
 
-      segmentEntitiesRef.current.push(segmentEntity);
+      shadowLineRef.current = viewerInstance.entities.add({
+        name: "Paraglider vertical shadow line",
+        polyline: {
+          clampToGround: false,
+          material: cesiumInstance.Color.WHITE.withAlpha(0.62),
+          positions: new cesiumInstance.CallbackProperty(() => shadowPositionsRef.current, false),
+          width: 2,
+        },
+      });
+
+      markerRef.current = viewerInstance.entities.add({
+        name: "Paraglider",
+        position: new cesiumInstance.CallbackPositionProperty(() => currentPositionRef.current, false),
+        point: {
+          color: cesiumInstance.Color.fromCssColorString("#00d9ff"),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          outlineColor: cesiumInstance.Color.WHITE,
+          outlineWidth: 2,
+          pixelSize: 10,
+        },
+      });
+
+      updateCamera(firstPosition);
+      isPlayingRef.current = true;
+      setIsPlaying(true);
     }
 
-    activeSegmentRef.current = viewer.entities.add({
-      name: "Active altitude colored flight track segment",
-      polyline: {
-        clampToGround: false,
-        material: new Cesium.ColorMaterialProperty(
-          new Cesium.CallbackProperty(() => activeSegmentColorRef.current, false),
-        ),
-        positions: new Cesium.CallbackProperty(() => activeSegmentPositionsRef.current, false),
-        width: 4,
-      },
+    setupFlight().catch((error) => {
+      isPlayingRef.current = false;
+      setIsPlaying(false);
+      setLoadError(error instanceof Error ? error.message : "Could not prepare the 3D replay.");
     });
 
-    shadowLineRef.current = viewer.entities.add({
-      name: "Paraglider vertical shadow line",
-      polyline: {
-        clampToGround: false,
-        material: Cesium.Color.WHITE.withAlpha(0.62),
-        positions: new Cesium.CallbackProperty(() => shadowPositionsRef.current, false),
-        width: 2,
-      },
-    });
-
-    markerRef.current = viewer.entities.add({
-      name: "Paraglider",
-      position: new Cesium.CallbackPositionProperty(() => currentPositionRef.current, false),
-      point: {
-        color: Cesium.Color.fromCssColorString("#00d9ff"),
-        disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        outlineColor: Cesium.Color.WHITE,
-        outlineWidth: 2,
-        pixelSize: 10,
-      },
-    });
-
-    updateCamera(firstPoint);
-  }, [altitudeColor, flight, getRenderAltitude, isReady, updateCamera]);
+    return () => {
+      cancelled = true;
+    };
+  }, [altitudeColor, flight, getPointRenderPosition, isReady, prepareRenderPositions, updateCamera]);
 
   useEffect(() => {
     const viewer = viewerRef.current;
@@ -517,8 +580,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
         return;
       }
 
-      const current = findPointAtElapsed(flightRef.current.points, elapsedRef.current).point;
-      updateCamera(current);
+      updateCamera(currentPositionRef.current);
     }
 
     function getPinchDistance() {
@@ -597,8 +659,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       event.preventDefault();
       const zoomFactor = event.deltaY > 0 ? 1.12 : 0.88;
       orbitRef.current.range = Math.max(300, Math.min(35_000, orbitRef.current.range * zoomFactor));
-      const current = findPointAtElapsed(flightRef.current.points, elapsedRef.current).point;
-      updateCamera(current);
+      updateCamera(currentPositionRef.current);
     }
 
     canvas.addEventListener("pointerdown", handlePointerDown);
