@@ -57,6 +57,7 @@ export function FileUpload({ flight, sourceText, onFlightLoaded }: FileUploadPro
   const [shareError, setShareError] = useState<string | null>(null);
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [shareExpiresAt, setShareExpiresAt] = useState<string | null>(null);
+  const [didCopyShareLink, setDidCopyShareLink] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
 
   async function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -74,6 +75,7 @@ export function FileUpload({ flight, sourceText, onFlightLoaded }: FileUploadPro
       setShareError(null);
       setShareLink(null);
       setShareExpiresAt(null);
+      setDidCopyShareLink(false);
       onFlightLoaded(flight, content);
     } catch (unknownError) {
       setError(unknownError instanceof Error ? unknownError.message : "Could not parse this IGC file.");
@@ -105,7 +107,12 @@ export function FileUpload({ flight, sourceText, onFlightLoaded }: FileUploadPro
 
       setShareLink(absoluteUrl);
       setShareExpiresAt(payload.expiresAt ?? null);
-      await navigator.clipboard?.writeText(absoluteUrl).catch(() => undefined);
+      const didCopy = await navigator.clipboard
+        ?.writeText(absoluteUrl)
+        .then(() => true)
+        .catch(() => false);
+
+      setDidCopyShareLink(Boolean(didCopy));
     } catch (unknownError) {
       setShareError(unknownError instanceof Error ? unknownError.message : "Could not create share link.");
     } finally {
@@ -113,20 +120,53 @@ export function FileUpload({ flight, sourceText, onFlightLoaded }: FileUploadPro
     }
   }
 
+  async function handleCopyShareLink() {
+    if (!shareLink) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setShareError(null);
+      setDidCopyShareLink(true);
+    } catch {
+      setShareError("Could not copy automatically. Long-press or open the link to copy it.");
+    }
+  }
+
   return (
     <>
       <div className="upload-card">
-      <button className="upload-target" type="button" onClick={() => inputRef.current?.click()}>
-        <strong>Upload IGC Flight</strong>
-      </button>
-      <input
-        ref={inputRef}
-        accept=".igc,.IGC,text/plain,application/octet-stream"
-        className="file-input"
-        type="file"
-        onChange={handleChange}
-      />
-      {error ? <p className="upload-error">{error}</p> : null}
+        <button className="upload-target" type="button" onClick={() => inputRef.current?.click()}>
+          <strong>Upload IGC Flight</strong>
+        </button>
+        <input
+          ref={inputRef}
+          accept=".igc,.IGC,text/plain,application/octet-stream"
+          className="file-input"
+          type="file"
+          onChange={handleChange}
+        />
+        {error ? <p className="upload-error">{error}</p> : null}
+        {flight && sourceText ? (
+          <div className="share-panel">
+            <button type="button" onClick={handleShare} disabled={isSharing}>
+              {isSharing ? "Creating link..." : "Share flight for 24h"}
+            </button>
+            <p>Anyone with the link can view this track until it expires.</p>
+            {shareLink ? (
+              <div className="share-link">
+                <span>Share link ready</span>
+                <button type="button" onClick={handleCopyShareLink}>
+                  {didCopyShareLink ? "Copied" : "Copy link"}
+                </button>
+                <input aria-label="Share link" readOnly value={shareLink} onFocus={(event) => event.target.select()} />
+                {shareExpiresAt ? <small>Expires {new Date(shareExpiresAt).toLocaleString()}</small> : null}
+              </div>
+            ) : null}
+            {shareError ? <p className="upload-error">{shareError}</p> : null}
+          </div>
+        ) : null}
       </div>
       {flight ? (
         <section className="flight-summary" aria-label="Loaded flight summary">
@@ -148,21 +188,6 @@ export function FileUpload({ flight, sourceText, onFlightLoaded }: FileUploadPro
               </dd>
             </div>
           </dl>
-          {sourceText ? (
-            <div className="share-panel">
-              <button type="button" onClick={handleShare} disabled={isSharing}>
-                {isSharing ? "Creating link..." : "Share flight for 24h"}
-              </button>
-              <p>Anyone with the link can view this track until it expires.</p>
-              {shareLink ? (
-                <div className="share-link">
-                  <a href={shareLink}>{shareLink}</a>
-                  {shareExpiresAt ? <small>Expires {new Date(shareExpiresAt).toLocaleString()}</small> : null}
-                </div>
-              ) : null}
-              {shareError ? <p className="upload-error">{shareError}</p> : null}
-            </div>
-          ) : null}
         </section>
       ) : null}
     </>
