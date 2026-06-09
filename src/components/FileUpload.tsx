@@ -1,10 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { formatDistance, formatDuration } from "@/lib/flightMath";
 import { parseIgcFile } from "@/lib/igcParser";
 import type { ParsedFlight } from "@/types/flight";
 
 type FileUploadProps = {
+  flight: ParsedFlight | null;
   onFlightLoaded: (flight: ParsedFlight) => void;
 };
 
@@ -28,10 +30,9 @@ function readFileAsText(file: File) {
   });
 }
 
-export function FileUpload({ onFlightLoaded }: FileUploadProps) {
+export function FileUpload({ flight, onFlightLoaded }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
 
   async function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -42,25 +43,22 @@ export function FileUpload({ onFlightLoaded }: FileUploadProps) {
 
     try {
       setError(null);
-      setStatus(`Reading ${file.name}...`);
       const content = await readFileAsText(file);
       const flight = parseIgcFile(content, file.name);
 
       onFlightLoaded(flight);
-      setStatus(`Loaded ${flight.points.length.toLocaleString()} fixes from ${file.name}.`);
     } catch (unknownError) {
       setError(unknownError instanceof Error ? unknownError.message : "Could not parse this IGC file.");
-      setStatus(null);
     } finally {
       event.target.value = "";
     }
   }
 
   return (
-    <div className="upload-card">
+    <>
+      <div className="upload-card">
       <button className="upload-target" type="button" onClick={() => inputRef.current?.click()}>
-        <span>Upload IGC Flight</span>
-        <strong>Choose IGC file from Files</strong>
+        <strong>Upload IGC Flight</strong>
       </button>
       <input
         ref={inputRef}
@@ -69,9 +67,30 @@ export function FileUpload({ onFlightLoaded }: FileUploadProps) {
         type="file"
         onChange={handleChange}
       />
-      <p className="upload-help">On mobile, choose Browse or Files and select your `.igc` file.</p>
-      {status ? <p className="upload-status">{status}</p> : null}
       {error ? <p className="upload-error">{error}</p> : null}
-    </div>
+      </div>
+      {flight ? (
+        <section className="flight-summary" aria-label="Loaded flight summary">
+          <span>Loaded flight</span>
+          <strong>{flight.filename}</strong>
+          <dl>
+            <div>
+              <dt>Time</dt>
+              <dd>{formatDuration(flight.durationMs)}</dd>
+            </div>
+            <div>
+              <dt>Distance</dt>
+              <dd>{formatDistance(flight.distanceMeters)}</dd>
+            </div>
+            <div>
+              <dt>Altitude</dt>
+              <dd>
+                {Math.round(flight.minAltitude)}-{Math.round(flight.maxAltitude)} m
+              </dd>
+            </div>
+          </dl>
+        </section>
+      ) : null}
+    </>
   );
 }

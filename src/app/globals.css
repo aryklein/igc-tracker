@@ -66,7 +66,7 @@ button {
 .intro-panel {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 28px;
   padding: 28px;
   border: 1px solid var(--panel-border);
@@ -96,7 +96,8 @@ button {
 .hint-list,
 .upload-error,
 .viewer-empty span,
-.flight-card small {
+.flight-summary span,
+.flight-summary dt {
   color: var(--muted);
 }
 
@@ -113,7 +114,8 @@ button {
 .upload-target {
   display: grid;
   width: 100%;
-  text-align: left;
+  justify-items: center;
+  text-align: center;
   gap: 8px;
   padding: 18px;
   border: 1px dashed rgba(255, 255, 255, 0.28);
@@ -125,11 +127,6 @@ button {
 .upload-target:hover {
   border-color: rgba(255, 122, 26, 0.8);
   background: rgba(255, 122, 26, 0.12);
-}
-
-.upload-target span {
-  color: var(--muted);
-  font-size: 0.85rem;
 }
 
 .upload-target strong {
@@ -146,18 +143,63 @@ button {
 }
 
 .upload-status,
-.upload-help,
 .upload-error {
   font-size: 0.9rem;
 }
 
-.upload-help {
-  color: var(--muted);
-  line-height: 1.45;
+.flight-summary {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.upload-status {
-  color: var(--muted);
+.flight-summary span {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.flight-summary strong {
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flight-summary dl {
+  display: grid;
+  gap: 8px;
+}
+
+.flight-summary dl div {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 10px;
+}
+
+.flight-summary dt,
+.flight-summary dd {
+  font-size: 0.86rem;
+}
+
+.flight-summary dt {
+  font-weight: 700;
+}
+
+.flight-summary dd {
+  overflow: hidden;
+  color: #f7fbff;
+  font-weight: 800;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hint-list {
@@ -215,7 +257,7 @@ button {
   right: 18px;
   bottom: 18px;
   display: grid;
-  grid-template-columns: minmax(220px, 330px) minmax(280px, 1fr);
+  grid-template-columns: minmax(180px, 260px) minmax(280px, 1fr);
   gap: 14px;
   pointer-events: none;
 }
@@ -232,15 +274,7 @@ button {
 .flight-card {
   display: grid;
   gap: 6px;
-  padding: 16px;
-}
-
-.flight-card span {
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 0.82rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  padding: 14px;
 }
 
 .flight-live-stats {
@@ -328,17 +362,41 @@ button {
   background: var(--accent);
 }
 
+.playback-card .icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+
 .progress-control {
   display: grid;
   gap: 6px;
 }
 
-.progress-control span {
+.progress-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.progress-heading span,
+.progress-heading strong {
   color: var(--muted);
   font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.progress-heading strong {
+  font-family: var(--font-mono), monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
 }
 
 .progress-control input {

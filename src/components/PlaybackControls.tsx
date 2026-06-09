@@ -6,6 +6,7 @@ const SPEEDS = [1, 4, 8, 16, 32];
 
 type PlaybackControlsProps = {
   currentMs: number;
+  currentTimestamp: number | null;
   durationMs: number;
   isPlaying: boolean;
   speed: number;
@@ -17,6 +18,7 @@ type PlaybackControlsProps = {
 
 export function PlaybackControls({
   currentMs,
+  currentTimestamp,
   durationMs,
   isPlaying,
   speed,
@@ -25,14 +27,23 @@ export function PlaybackControls({
   onSeek,
   onSpeedChange,
 }: PlaybackControlsProps) {
+  const localTime = currentTimestamp
+    ? new Date(currentTimestamp).toLocaleTimeString([], {
+        hour: "2-digit",
+        hour12: false,
+        minute: "2-digit",
+        second: "2-digit",
+      })
+    : "--:--:--";
+
   return (
     <div className="playback-card">
       <div className="playback-topline">
-        <button type="button" onClick={onPlayPause}>
-          {isPlaying ? "Pause" : "Play"}
+        <button aria-label={isPlaying ? "Pause" : "Play"} className="icon-button" type="button" onClick={onPlayPause}>
+          {isPlaying ? "⏸" : "▶"}
         </button>
-        <button type="button" onClick={onReset}>
-          Reset
+        <button aria-label="Reset" className="icon-button" type="button" onClick={onReset}>
+          ↺
         </button>
         <span>
           {formatDuration(currentMs)} / {formatDuration(durationMs)}
@@ -51,7 +62,10 @@ export function PlaybackControls({
         ))}
       </fieldset>
       <label className="progress-control">
-        <span>Flight progress</span>
+        <span className="progress-heading">
+          <span>Flight progress</span>
+          <strong>{localTime}</strong>
+        </span>
         <input
           aria-label="Flight progress"
           max={durationMs}

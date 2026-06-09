@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { formatDistance, formatDuration } from "@/lib/flightMath";
 import type { FlightPoint, ParsedFlight } from "@/types/flight";
 import { PlaybackControls } from "./PlaybackControls";
 
@@ -22,6 +21,8 @@ type InterpolatedPoint = {
 
 const VISUAL_TERRAIN_CLEARANCE_METERS = 8;
 const VARIO_WINDOW_MS = 10_000;
+const LANDING_SEGMENT_REFRESH_WINDOW_MS = 120_000;
+const LANDING_SEGMENT_REFRESH_BATCH_SIZE = 8;
 
 declare global {
   interface Window {
@@ -124,6 +125,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
   const isPlayingRef = useRef(false);
   const speedRef = useRef(1);
   const visibleSegmentCountRef = useRef(0);
+  const landingSegmentRefreshIndexRef = useRef<number | null>(null);
   const orbitRef = useRef({ heading: 0, pitch: -0.75, range: 4500 });
 
   const [isReady, setIsReady] = useState(false);
@@ -160,20 +162,22 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
   const getRenderAltitude = useCallback((point: FlightPoint) => {
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
-    const flightAltitude = point.altitude + VISUAL_TERRAIN_CLEARANCE_METERS;
 
     if (!Cesium || !viewer) {
-      return flightAltitude;
+      return point.altitude;
     }
 
     const cartographic = Cesium.Cartographic.fromDegrees(point.longitude, point.latitude);
     const groundHeight = viewer.scene.globe.getHeight(cartographic);
 
     if (groundHeight === undefined) {
-      return flightAltitude;
+      return point.altitude;
     }
 
-    return Math.max(flightAltitude, groundHeight + VISUAL_TERRAIN_CLEARANCE_METERS);
+    const agl = Math.max(0, point.altitude - groundHeight);
+    const visualClearance = Math.min(VISUAL_TERRAIN_CLEARANCE_METERS, agl);
+
+    return groundHeight + agl + visualClearance;
   }, []);
 
   const updateVisibleSegments = useCallback(
@@ -211,6 +215,43 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     viewer.camera.lookAt(target, new Cesium.HeadingPitchRange(heading, pitch, range));
   }, [getRenderAltitude]);
 
+  const refreshLandingSegments = useCallback(() => {
+    const Cesium = cesiumRef.current;
+    const flightData = flightRef.current;
+
+    if (!Cesium || !flightData) {
+      return;
+    }
+
+    if (landingSegmentRefreshIndexRef.current === null) {
+      const refreshStart = Math.max(0, flightData.durationMs - LANDING_SEGMENT_REFRESH_WINDOW_MS);
+      landingSegmentRefreshIndexRef.current = Math.max(
+        0,
+        flightData.points.findIndex((point) => point.elapsedMs >= refreshStart) - 1,
+      );
+    }
+
+    const endIndex = segmentEntitiesRef.current.length;
+    const batchEnd = Math.min(endIndex, landingSegmentRefreshIndexRef.current + LANDING_SEGMENT_REFRESH_BATCH_SIZE);
+
+    for (let index = landingSegmentRefreshIndexRef.current; index < batchEnd; index += 1) {
+      const entity = segmentEntitiesRef.current[index];
+      const previous = flightData.points[index];
+      const point = flightData.points[index + 1];
+
+      if (!entity?.polyline || !previous || !point) {
+        continue;
+      }
+
+      entity.polyline.positions = new Cesium.ConstantProperty([
+        Cesium.Cartesian3.fromDegrees(previous.longitude, previous.latitude, getRenderAltitude(previous)),
+        Cesium.Cartesian3.fromDegrees(point.longitude, point.latitude, getRenderAltitude(point)),
+      ]);
+    }
+
+    landingSegmentRefreshIndexRef.current = batchEnd >= endIndex ? endIndex : batchEnd;
+  }, [getRenderAltitude]);
+
   const updateTrack = useCallback(
     (current: InterpolatedPoint) => {
       const Cesium = cesiumRef.current;
@@ -237,19 +278,33 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       const previous = flightData.points[Math.max(0, current.index - 1)];
       const completedSegmentCount =
         current.point.elapsedMs >= flightData.durationMs ? flightData.points.length - 1 : Math.max(0, current.index - 1);
-
-      currentPositionRef.current = currentCartesian;
-      activeSegmentPositionsRef.current = [
+      const activeSegmentPositions = [
         Cesium.Cartesian3.fromDegrees(previous.longitude, previous.latitude, getRenderAltitude(previous)),
         currentCartesian,
       ];
+
+      currentPositionRef.current = currentCartesian;
+      activeSegmentPositionsRef.current = activeSegmentPositions;
       activeSegmentColorRef.current = altitudeColor(Cesium, current.point.altitude, flightData);
       shadowPositionsRef.current = [groundCartesian, currentCartesian];
       setCurrentAgl(groundHeight === undefined ? null : Math.max(0, current.point.altitude - groundHeight));
       updateVisibleSegments(completedSegmentCount);
+
+      if (current.point.elapsedMs >= flightData.durationMs - LANDING_SEGMENT_REFRESH_WINDOW_MS) {
+        refreshLandingSegments();
+      }
+
+      if (current.point.elapsedMs >= flightData.durationMs) {
+        const finalSegment = segmentEntitiesRef.current.at(-1);
+
+        if (finalSegment?.polyline) {
+          finalSegment.polyline.positions = new Cesium.ConstantProperty(activeSegmentPositions);
+        }
+      }
+
       updateCamera(current.point);
     },
-    [altitudeColor, getRenderAltitude, updateCamera, updateVisibleSegments],
+    [altitudeColor, getRenderAltitude, refreshLandingSegments, updateCamera, updateVisibleSegments],
   );
 
   useEffect(() => {
@@ -349,6 +404,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
     elapsedRef.current = 0;
     lastFrameRef.current = null;
     visibleSegmentCountRef.current = 0;
+    landingSegmentRefreshIndexRef.current = null;
     segmentEntitiesRef.current = [];
     activeSegmentPositionsRef.current = [];
     shadowPositionsRef.current = [];
@@ -668,7 +724,6 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       {flight ? (
         <div className="hud">
           <div className="flight-card">
-            <span>{flight.filename}</span>
             <div className="flight-live-stats">
               <div className="altitude-stack">
                 <strong
@@ -681,13 +736,10 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
               </div>
               <em className={verticalSpeed >= 0 ? "climb" : "sink"}>{verticalSpeed.toFixed(1)} m/s</em>
             </div>
-            <small>
-              {formatDuration(flight.durationMs)} · {formatDistance(flight.distanceMeters)} · {Math.round(flight.minAltitude)}-
-              {Math.round(flight.maxAltitude)} m
-            </small>
           </div>
           <PlaybackControls
             currentMs={currentMs}
+            currentTimestamp={currentPoint?.timestamp ?? null}
             durationMs={flight.durationMs}
             isPlaying={isPlaying}
             speed={speed}
