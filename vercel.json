@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/cleanup-shared-flights",
-      "schedule": "0 * * * *"
+      "schedule": "0 3 * * *"
     }
   ]
 }
