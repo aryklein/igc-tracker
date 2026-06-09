@@ -5,8 +5,19 @@ import { CesiumFlightViewer } from "./CesiumFlightViewer";
 import { FileUpload } from "./FileUpload";
 import type { ParsedFlight } from "@/types/flight";
 
-export function FlightApp() {
-  const [flight, setFlight] = useState<ParsedFlight | null>(null);
+type FlightAppProps = {
+  initialFlight?: ParsedFlight | null;
+  initialSourceText?: string | null;
+};
+
+export function FlightApp({ initialFlight = null, initialSourceText = null }: FlightAppProps) {
+  const [flight, setFlight] = useState<ParsedFlight | null>(initialFlight);
+  const [sourceText, setSourceText] = useState<string | null>(initialSourceText);
+
+  function handleFlightLoaded(nextFlight: ParsedFlight, nextSourceText: string) {
+    setFlight(nextFlight);
+    setSourceText(nextSourceText);
+  }
 
   return (
     <main className="app-shell">
@@ -16,7 +27,7 @@ export function FlightApp() {
           <h1>Replay your paraglider flight in 3D.</h1>
           <p className="intro-copy">A personal project by Ary Kleinerman.</p>
         </div>
-        <FileUpload flight={flight} onFlightLoaded={setFlight} />
+        <FileUpload flight={flight} sourceText={sourceText} onFlightLoaded={handleFlightLoaded} />
       </aside>
       <CesiumFlightViewer flight={flight} />
     </main>

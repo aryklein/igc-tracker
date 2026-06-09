@@ -202,6 +202,86 @@ button {
   white-space: nowrap;
 }
 
+.share-panel {
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.share-panel button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: #08111f;
+  background: var(--accent);
+  font-weight: 800;
+}
+
+.share-panel button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.share-panel p,
+.share-link small {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.share-link {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.share-link a {
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shared-flight-message {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.shared-flight-message section {
+  display: grid;
+  gap: 14px;
+  width: min(520px, 100%);
+  padding: 28px;
+  border: 1px solid var(--panel-border);
+  border-radius: 28px;
+  background: var(--panel);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+}
+
+.shared-flight-message h1 {
+  font-size: clamp(2rem, 7vw, 3.2rem);
+  letter-spacing: -0.08em;
+  line-height: 0.95;
+}
+
+.shared-flight-message p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.shared-flight-message a {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: #08111f;
+  background: var(--accent);
+  font-weight: 800;
+}
+
 .hint-list {
   display: grid;
   gap: 10px;
