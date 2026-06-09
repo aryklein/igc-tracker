@@ -79,5 +79,5 @@ export default async function SharedFlightPage({ params }: SharedFlightPageProps
     return <SharedFlightMessage title="Could not load flight">This shared IGC file could not be parsed.</SharedFlightMessage>;
   }
 
-  return <FlightApp initialFlight={flight} initialSourceText={content} />;
+  return <FlightApp initialFlight={flight} initialSourceText={content} allowSharing={false} />;
 }

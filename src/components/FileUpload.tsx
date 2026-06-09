@@ -8,6 +8,7 @@ import type { ParsedFlight } from "@/types/flight";
 type FileUploadProps = {
   flight: ParsedFlight | null;
   sourceText: string | null;
+  allowSharing: boolean;
   onFlightLoaded: (flight: ParsedFlight, sourceText: string) => void;
 };
 
@@ -51,7 +52,7 @@ function readFileAsText(file: File) {
   });
 }
 
-export function FileUpload({ flight, sourceText, onFlightLoaded }: FileUploadProps) {
+export function FileUpload({ flight, sourceText, allowSharing, onFlightLoaded }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
@@ -148,7 +149,7 @@ export function FileUpload({ flight, sourceText, onFlightLoaded }: FileUploadPro
           onChange={handleChange}
         />
         {error ? <p className="upload-error">{error}</p> : null}
-        {flight && sourceText ? (
+        {allowSharing && flight && sourceText ? (
           <div className="share-panel">
             <button type="button" onClick={handleShare} disabled={isSharing}>
               {isSharing ? "Creating link..." : "Share flight for 24h"}
@@ -171,7 +172,6 @@ export function FileUpload({ flight, sourceText, onFlightLoaded }: FileUploadPro
       {flight ? (
         <section className="flight-summary" aria-label="Loaded flight summary">
           <span>Loaded flight</span>
-          <strong>{flight.filename}</strong>
           <dl>
             <div>
               <dt>Time</dt>
@@ -187,6 +187,18 @@ export function FileUpload({ flight, sourceText, onFlightLoaded }: FileUploadPro
                 {Math.round(flight.minAltitude)}-{Math.round(flight.maxAltitude)} m
               </dd>
             </div>
+            {flight.pilotName ? (
+              <div>
+                <dt>Pilot</dt>
+                <dd>{flight.pilotName}</dd>
+              </div>
+            ) : null}
+            {flight.gliderModel ? (
+              <div>
+                <dt>Glider</dt>
+                <dd>{flight.gliderModel}</dd>
+              </div>
+            ) : null}
           </dl>
         </section>
       ) : null}

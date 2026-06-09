@@ -10,6 +10,8 @@ export type FlightPoint = {
 
 export type ParsedFlight = {
   filename: string;
+  pilotName: string | null;
+  gliderModel: string | null;
   points: FlightPoint[];
   startTime: number;
   endTime: number;

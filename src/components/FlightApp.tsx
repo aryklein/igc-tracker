@@ -8,9 +8,10 @@ import type { ParsedFlight } from "@/types/flight";
 type FlightAppProps = {
   initialFlight?: ParsedFlight | null;
   initialSourceText?: string | null;
+  allowSharing?: boolean;
 };
 
-export function FlightApp({ initialFlight = null, initialSourceText = null }: FlightAppProps) {
+export function FlightApp({ initialFlight = null, initialSourceText = null, allowSharing = true }: FlightAppProps) {
   const [flight, setFlight] = useState<ParsedFlight | null>(initialFlight);
   const [sourceText, setSourceText] = useState<string | null>(initialSourceText);
 
@@ -27,7 +28,7 @@ export function FlightApp({ initialFlight = null, initialSourceText = null }: Fl
           <h1>Replay your paraglider flight in 3D.</h1>
           <p className="intro-copy">A personal project by Ary Kleinerman.</p>
         </div>
-        <FileUpload flight={flight} sourceText={sourceText} onFlightLoaded={handleFlightLoaded} />
+        <FileUpload flight={flight} sourceText={sourceText} allowSharing={allowSharing} onFlightLoaded={handleFlightLoaded} />
       </aside>
       <CesiumFlightViewer flight={flight} />
     </main>

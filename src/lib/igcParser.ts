@@ -41,6 +41,34 @@ function parseAltitude(raw: string) {
   return Number(raw);
 }
 
+function parseHeaderValue(line: string) {
+  const value = line.includes(":")
+    ? line.slice(line.indexOf(":") + 1)
+    : line.replace(/^(?:HF|HO)(?:PLT(?:PILOT(?:INCHARGE)?)?|GTY(?:GLIDERTYPE)?)/, "");
+  const trimmed = value.trim();
+
+  return trimmed || null;
+}
+
+function parseFlightMetadata(content: string) {
+  let pilotName: string | null = null;
+  let gliderModel: string | null = null;
+
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim();
+
+    if (!pilotName && /^(HF|HO)PLT(?:PILOT(?:INCHARGE)?)?(?::|\b)/.test(line)) {
+      pilotName = parseHeaderValue(line);
+    }
+
+    if (!gliderModel && /^(HF|HO)GTY(?:GLIDERTYPE)?(?::|\b)/.test(line)) {
+      gliderModel = parseHeaderValue(line);
+    }
+  }
+
+  return { pilotName, gliderModel };
+}
+
 function parseFix(line: string, baseDate: number): FlightPoint | null {
   if (!/^B\d{6}\d{7}[NS]\d{8}[EW][AV]/.test(line)) {
     return null;
@@ -74,6 +102,7 @@ function parseFix(line: string, baseDate: number): FlightPoint | null {
 
 export function parseIgcFile(content: string, filename: string): ParsedFlight {
   const baseDate = parseIgcDate(content);
+  const { pilotName, gliderModel } = parseFlightMetadata(content);
   const points: FlightPoint[] = [];
   let dayOffset = 0;
   let previousTimestamp = 0;
@@ -118,6 +147,8 @@ export function parseIgcFile(content: string, filename: string): ParsedFlight {
 
   return {
     filename,
+    pilotName,
+    gliderModel,
     points,
     startTime,
     endTime,
