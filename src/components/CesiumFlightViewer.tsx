@@ -111,10 +111,12 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
   const viewerRef = useRef<Viewer | null>(null);
   const markerRef = useRef<Entity | null>(null);
   const shadowLineRef = useRef<Entity | null>(null);
+  const projectionTargetRef = useRef<Entity | null>(null);
   const activeSegmentRef = useRef<Entity | null>(null);
   const segmentEntitiesRef = useRef<Entity[]>([]);
   const animationFrameRef = useRef<number | null>(null);
   const currentPositionRef = useRef<Cartesian3 | undefined>(undefined);
+  const projectionGroundPositionRef = useRef<Cartesian3 | undefined>(undefined);
   const activeSegmentPositionsRef = useRef<Cartesian3[]>([]);
   const activeSegmentColorRef = useRef<Color | undefined>(undefined);
   const shadowPositionsRef = useRef<Cartesian3[]>([]);
@@ -330,6 +332,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       ];
 
       currentPositionRef.current = currentCartesian;
+      projectionGroundPositionRef.current = groundCartesian;
       activeSegmentPositionsRef.current = activeSegmentPositions;
       activeSegmentColorRef.current = altitudeColor(Cesium, current.point.altitude, flightData);
       shadowPositionsRef.current = [groundCartesian, currentCartesian];
@@ -488,10 +491,11 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       const firstGroundAltitude = firstGroundHeight ?? 0;
 
       currentPositionRef.current = firstPosition;
+      projectionGroundPositionRef.current = cesiumInstance.Cartesian3.fromDegrees(firstPoint.longitude, firstPoint.latitude, firstGroundAltitude);
       activeSegmentPositionsRef.current = [firstPosition, firstPosition];
       activeSegmentColorRef.current = altitudeColor(cesiumInstance, firstPoint.altitude, flightData);
       shadowPositionsRef.current = [
-        cesiumInstance.Cartesian3.fromDegrees(firstPoint.longitude, firstPoint.latitude, firstGroundAltitude),
+        projectionGroundPositionRef.current,
         firstPosition,
       ];
       setCurrentPoint(firstPoint);
@@ -533,12 +537,29 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       });
 
       shadowLineRef.current = viewerInstance.entities.add({
-        name: "Paraglider vertical shadow line",
+        name: "Paraglider altitude projection beam",
         polyline: {
           clampToGround: false,
-          material: cesiumInstance.Color.WHITE.withAlpha(0.62),
+          material: new cesiumInstance.PolylineGlowMaterialProperty({
+            color: cesiumInstance.Color.fromCssColorString("#00d9ff").withAlpha(0.72),
+            glowPower: 0.28,
+            taperPower: 0.65,
+          }),
           positions: new cesiumInstance.CallbackProperty(() => shadowPositionsRef.current, false),
-          width: 2,
+          width: 8,
+        },
+      });
+
+      projectionTargetRef.current = viewerInstance.entities.add({
+        name: "Paraglider ground projection target",
+        position: new cesiumInstance.CallbackPositionProperty(() => projectionGroundPositionRef.current, false),
+        ellipse: {
+          semiMajorAxis: 38,
+          semiMinorAxis: 38,
+          material: cesiumInstance.Color.fromCssColorString("#00d9ff").withAlpha(0.18),
+          outline: true,
+          outlineColor: cesiumInstance.Color.WHITE.withAlpha(0.7),
+          outlineWidth: 2,
         },
       });
 
