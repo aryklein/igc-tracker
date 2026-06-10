@@ -9,6 +9,7 @@ type Viewer = import("cesium").Viewer;
 type Entity = import("cesium").Entity;
 type Cartesian3 = import("cesium").Cartesian3;
 type Color = import("cesium").Color;
+type TerrainProvider = import("cesium").TerrainProvider;
 
 type CesiumFlightViewerProps = {
   flight: ParsedFlight | null;
@@ -382,6 +383,15 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
           : new Cesium.ImageryLayer(
               new Cesium.OpenStreetMapImageryProvider({ url: "https://tile.openstreetmap.org/" }),
             );
+        let terrainProvider: TerrainProvider | undefined;
+
+        if (token) {
+          try {
+            terrainProvider = await Cesium.createWorldTerrainAsync();
+          } catch {
+            terrainProvider = undefined;
+          }
+        }
 
         const viewer = new Cesium.Viewer(containerRef.current, {
           animation: false,
@@ -395,7 +405,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
           sceneModePicker: false,
           selectionIndicator: false,
           timeline: false,
-          terrain: token ? Cesium.Terrain.fromWorldTerrain() : undefined,
+          terrainProvider,
         });
 
         viewer.scene.globe.depthTestAgainstTerrain = false;
