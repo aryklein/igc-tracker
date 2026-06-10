@@ -81,6 +81,8 @@ src/lib/flightMath.ts                Distance and formatting helpers
 src/types/flight.ts                  Flight data types
 ```
 
+Implementation notes for the Cesium replay, terrain sampling, progressive track drawing, and projection beam live in `docs/viewer-rendering.md`.
+
 ## Verification
 
 Before handing off changes, run:
