@@ -126,7 +126,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
   const isPlayingRef = useRef(false);
   const speedRef = useRef(1);
   const visibleSegmentCountRef = useRef(0);
-  const orbitRef = useRef({ heading: 0, pitch: -0.75, range: 4500 });
+  const orbitRef = useRef({ heading: 0, pitch: -0.75, range: 2200 });
 
   const [isReady, setIsReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
