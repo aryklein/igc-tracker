@@ -1,5 +1,5 @@
 export const SHARED_FLIGHT_PREFIX = "shared-flights/";
-export const SHARED_FLIGHT_TTL_MS = 24 * 60 * 60 * 1000;
+export const SHARED_FLIGHT_TTL_MS = 72 * 60 * 60 * 1000;
 
 const SHARE_ID_PATTERN = /^(\d{8}T\d{6}Z)_[a-z0-9]{10}$/;
 

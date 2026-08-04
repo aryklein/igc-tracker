@@ -152,7 +152,7 @@ export function FileUpload({ flight, sourceText, allowSharing, onFlightLoaded }:
         {allowSharing && flight && sourceText ? (
           <div className="share-panel">
             <button type="button" onClick={handleShare} disabled={isSharing}>
-              {isSharing ? "Creating link..." : "Share flight for 24h"}
+               {isSharing ? "Creating link..." : "Share flight for 72h"}
             </button>
             <p>Anyone with the link can view this track until it expires.</p>
             {shareLink ? (
