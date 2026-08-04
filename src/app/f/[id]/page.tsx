@@ -61,7 +61,7 @@ export default async function SharedFlightPage({ params }: SharedFlightPageProps
   }
 
   if (isShareExpired(id)) {
-    return <SharedFlightMessage title="Flight link expired">Shared flights are available for 24 hours.</SharedFlightMessage>;
+    return <SharedFlightMessage title="Flight link expired">Shared flights are available for 72 hours.</SharedFlightMessage>;
   }
 
   const content = await readBlobText(getIgcBlobPath(id));
