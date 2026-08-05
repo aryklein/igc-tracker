@@ -29,11 +29,14 @@ type FlightRenderData = {
   segmentEntities: Entity[];
   activeSegment: Entity;
   marker: Entity;
+  label: Entity;
   beam: Entity;
   groundTarget: Entity;
   beamPositions: Cartesian3[];
   activeSegmentPositions: Cartesian3[];
   activeSegmentColor: Color;
+  labelText: string;
+  labelPosition: Cartesian3 | undefined;
   groundTargetPosition: Cartesian3 | undefined;
   isFollowed: boolean;
   visibleSegmentCount: number;
@@ -306,11 +309,13 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
 
         if (!result) {
           renderData.marker.show = false;
+          renderData.label.show = false;
           renderData.beam.show = false;
           renderData.groundTarget.show = false;
           renderData.activeSegment.show = false;
           renderData.beamPositions.length = 0;
           renderData.activeSegmentPositions.length = 0;
+          renderData.labelPosition = undefined;
           renderData.groundTargetPosition = undefined;
 
           for (const segment of renderData.segmentEntities) {
@@ -345,6 +350,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
 
         renderData.visibleSegmentCount = nextVisibleCount;
         renderData.marker.show = true;
+        renderData.label.show = true;
         renderData.beam.show = true;
         renderData.groundTarget.show = isFollowed;
         renderData.activeSegment.show = true;
@@ -381,6 +387,8 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         }
 
         renderData.marker.position = new Cesium.ConstantPositionProperty(result.position);
+        renderData.labelPosition = result.position;
+        renderData.labelText = `${renderData.flight.flight.pilotName ?? renderData.flight.flight.filename}\n${Math.round(result.current.point.altitude)} m`;
         renderData.beamPositions.splice(0, renderData.beamPositions.length, groundPosition, result.position);
         renderData.groundTargetPosition = groundPosition;
         renderData.activeSegmentPositions.splice(
@@ -445,6 +453,26 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
           pixelSize: 10,
         },
       });
+      let labelText = "";
+      let labelPosition: Cartesian3 | undefined;
+      const label = viewer.entities.add({
+        name: `${comparedFlight.flight.pilotName ?? comparedFlight.flight.filename} pilot label`,
+        position: new Cesium.CallbackPositionProperty(() => labelPosition, false),
+        label: {
+          text: new Cesium.CallbackProperty(() => labelText, false),
+          font: "600 13px ui-sans-serif, system-ui, sans-serif",
+          fillColor: Cesium.Color.WHITE,
+          outlineColor: Cesium.Color.fromCssColorString("#0a0a0a"),
+          outlineWidth: 2,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          showBackground: false,
+          pixelOffset: new Cesium.Cartesian2(0, -22),
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          scaleByDistance: new Cesium.NearFarScalar(500, 1, 15_000, 0.55),
+          translucencyByDistance: new Cesium.NearFarScalar(12_000, 1, 25_000, 0),
+        },
+      });
       const activeSegmentPositions: Cartesian3[] = [];
       let activeSegmentColor: Color = Cesium.Color.fromCssColorString(comparedFlight.color);
       const activeSegment = viewer.entities.add({
@@ -496,6 +524,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         activeSegment,
         activeSegmentPositions,
         marker,
+        label,
         beam,
         groundTarget,
         beamPositions,
@@ -504,6 +533,18 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         },
         set activeSegmentColor(color: Color) {
           activeSegmentColor = color;
+        },
+        get labelText() {
+          return labelText;
+        },
+        set labelText(text: string) {
+          labelText = text;
+        },
+        get labelPosition() {
+          return labelPosition;
+        },
+        set labelPosition(position: Cartesian3 | undefined) {
+          labelPosition = position;
         },
         get groundTargetPosition() {
           return groundTargetPosition;
@@ -674,6 +715,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
           }
 
           viewerInstance.entities.remove(renderData.marker);
+          viewerInstance.entities.remove(renderData.label);
           viewerInstance.entities.remove(renderData.activeSegment);
           viewerInstance.entities.remove(renderData.beam);
           viewerInstance.entities.remove(renderData.groundTarget);
