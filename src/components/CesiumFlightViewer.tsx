@@ -564,14 +564,22 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
       });
 
       markerRef.current = viewerInstance.entities.add({
-        name: "Paraglider",
+        name: "Paraglider pilot label",
         position: new cesiumInstance.CallbackPositionProperty(() => currentPositionRef.current, false),
-        point: {
-          color: cesiumInstance.Color.fromCssColorString("#00d9ff"),
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          outlineColor: cesiumInstance.Color.WHITE,
+        label: {
+          text: flightData.pilotName ?? flightData.filename,
+          font: "600 15px system-ui",
+          fillColor: cesiumInstance.Color.WHITE,
+          outlineColor: cesiumInstance.Color.fromCssColorString("#00d9ff"),
           outlineWidth: 2,
-          pixelSize: 10,
+          style: cesiumInstance.LabelStyle.FILL_AND_OUTLINE,
+          showBackground: true,
+          backgroundColor: cesiumInstance.Color.fromCssColorString("#07141d").withAlpha(0.82),
+          backgroundPadding: new cesiumInstance.Cartesian2(10, 6),
+          pixelOffset: new cesiumInstance.Cartesian2(0, -28),
+          verticalOrigin: cesiumInstance.VerticalOrigin.BOTTOM,
+          scaleByDistance: new cesiumInstance.NearFarScalar(500, 1, 12_000, 0.6),
+          translucencyByDistance: new cesiumInstance.NearFarScalar(8_000, 1, 20_000, 0),
         },
       });
 
