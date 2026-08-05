@@ -458,19 +458,23 @@ export function CesiumFlightViewer({
             : comparisonElapsed >= comparison.flight.durationMs
               ? segmentEntities.length
               : Math.max(0, findPointAtElapsed(comparison.flight.points, comparisonElapsed).index - 1);
-        const previousVisibleCount = comparisonVisibleSegmentCountsRef.current.get(comparison.id) ?? 0;
+        const clampedNextVisibleCount = Math.min(nextVisibleCount, segmentEntities.length);
+        const previousVisibleCount = Math.min(
+          comparisonVisibleSegmentCountsRef.current.get(comparison.id) ?? 0,
+          segmentEntities.length,
+        );
 
-        if (nextVisibleCount < previousVisibleCount) {
-          for (let index = nextVisibleCount; index < previousVisibleCount; index += 1) {
+        if (clampedNextVisibleCount < previousVisibleCount) {
+          for (let index = clampedNextVisibleCount; index < previousVisibleCount; index += 1) {
             segmentEntities[index].show = false;
           }
         }
 
-        for (let index = previousVisibleCount; index < nextVisibleCount; index += 1) {
+        for (let index = previousVisibleCount; index < clampedNextVisibleCount; index += 1) {
           segmentEntities[index].show = true;
         }
 
-        comparisonVisibleSegmentCountsRef.current.set(comparison.id, nextVisibleCount);
+        comparisonVisibleSegmentCountsRef.current.set(comparison.id, clampedNextVisibleCount);
 
         if (comparisonElapsed < 0) {
           comparisonShadowPositionsRef.current.set(comparison.id, []);
