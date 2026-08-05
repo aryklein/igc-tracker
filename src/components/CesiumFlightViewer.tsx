@@ -8,6 +8,7 @@ type CesiumModule = typeof import("cesium");
 type Viewer = import("cesium").Viewer;
 type Entity = import("cesium").Entity;
 type Cartesian3 = import("cesium").Cartesian3;
+type Color = import("cesium").Color;
 type TerrainProvider = import("cesium").TerrainProvider;
 
 type CesiumFlightViewerProps = {
@@ -32,7 +33,9 @@ type FlightRenderData = {
   groundTarget: Entity;
   beamPositions: Cartesian3[];
   activeSegmentPositions: Cartesian3[];
+  activeSegmentColor: Color;
   groundTargetPosition: Cartesian3 | undefined;
+  isFollowed: boolean;
   visibleSegmentCount: number;
 };
 
@@ -346,7 +349,13 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         renderData.groundTarget.show = isFollowed;
         renderData.activeSegment.show = true;
 
-        if (renderData.beam.polyline) {
+        renderData.activeSegmentColor =
+          flights.length === 1
+            ? altitudeColor(Cesium, result.current.point.altitude, renderData.flight.flight)
+            : Cesium.Color.fromCssColorString(renderData.flight.color);
+
+        if (renderData.beam.polyline && renderData.isFollowed !== isFollowed) {
+          renderData.isFollowed = isFollowed;
           renderData.beam.polyline.width = new Cesium.ConstantProperty(isFollowed ? 4 : 2);
           renderData.beam.polyline.material = new Cesium.PolylineGlowMaterialProperty({
             color: Cesium.Color.fromCssColorString(renderData.flight.color).withAlpha(isFollowed ? 0.42 : 0.3),
@@ -389,7 +398,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         }
       }
     },
-    [flights, getCurrentFlightPosition, updateCamera],
+    [altitudeColor, flights, getCurrentFlightPosition, updateCamera],
   );
 
   const createFlightEntities = useCallback(
@@ -437,24 +446,28 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         },
       });
       const activeSegmentPositions: Cartesian3[] = [];
+      let activeSegmentColor: Color = Cesium.Color.fromCssColorString(comparedFlight.color);
       const activeSegment = viewer.entities.add({
         name: `${comparedFlight.flight.pilotName ?? comparedFlight.flight.filename} active flight track segment`,
         show: false,
         polyline: {
           clampToGround: false,
-          material: new Cesium.ColorMaterialProperty(Cesium.Color.fromCssColorString(comparedFlight.color)),
+          material: new Cesium.ColorMaterialProperty(
+            new Cesium.CallbackProperty(() => activeSegmentColor, false),
+          ),
           positions: new Cesium.CallbackProperty(() => activeSegmentPositions, false),
           width: 3,
         },
       });
       const beamPositions: Cartesian3[] = [];
+      let beamIsFollowed = false;
       const beam = viewer.entities.add({
         name: `${comparedFlight.flight.pilotName ?? comparedFlight.flight.filename} altitude projection beam`,
         polyline: {
           clampToGround: false,
           material: new Cesium.PolylineGlowMaterialProperty({
-            color: Cesium.Color.fromCssColorString(comparedFlight.color).withAlpha(0.34),
-            glowPower: 0.22,
+            color: Cesium.Color.fromCssColorString(comparedFlight.color).withAlpha(0.3),
+            glowPower: 0.2,
             taperPower: 0.7,
           }),
           positions: new Cesium.CallbackProperty(() => beamPositions, false),
@@ -486,11 +499,23 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         beam,
         groundTarget,
         beamPositions,
+        get activeSegmentColor() {
+          return activeSegmentColor;
+        },
+        set activeSegmentColor(color: Color) {
+          activeSegmentColor = color;
+        },
         get groundTargetPosition() {
           return groundTargetPosition;
         },
         set groundTargetPosition(position: Cartesian3 | undefined) {
           groundTargetPosition = position;
+        },
+        get isFollowed() {
+          return beamIsFollowed;
+        },
+        set isFollowed(value: boolean) {
+          beamIsFollowed = value;
         },
         visibleSegmentCount: 0,
       };
