@@ -157,7 +157,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
   const elapsedRef = useRef(0);
   const lastFrameRef = useRef<number | null>(null);
   const isPlayingRef = useRef(false);
-  const speedRef = useRef(1);
+  const speedRef = useRef(8);
   const followedFlightIdRef = useRef<string | null>(followedFlightId);
   const syncModeRef = useRef<FlightSyncMode>(syncMode);
   const orbitRef = useRef({ heading: 0, pitch: -0.75, range: 2200 });
@@ -165,7 +165,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
   const [isReady, setIsReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1);
+  const [speed, setSpeed] = useState(8);
   const [currentMs, setCurrentMs] = useState(0);
   const [currentPoint, setCurrentPoint] = useState<FlightPoint | null>(null);
   const [currentAgl, setCurrentAgl] = useState<number | null>(null);
@@ -339,6 +339,15 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         renderData.beam.show = true;
         renderData.groundTarget.show = isFollowed;
         renderData.activeSegment.show = true;
+
+        if (renderData.beam.polyline) {
+          renderData.beam.polyline.width = new Cesium.ConstantProperty(isFollowed ? 4 : 2);
+          renderData.beam.polyline.material = new Cesium.PolylineGlowMaterialProperty({
+            color: Cesium.Color.fromCssColorString(renderData.flight.color).withAlpha(isFollowed ? 0.42 : 0.3),
+            glowPower: isFollowed ? 0.28 : 0.2,
+            taperPower: isFollowed ? 0.65 : 0.7,
+          });
+        }
 
         const previousIndex = Math.max(0, result.current.index - 1);
         const nextIndex = Math.min(result.current.index, renderData.groundHeights.length - 1);
