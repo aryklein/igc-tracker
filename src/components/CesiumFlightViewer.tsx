@@ -517,7 +517,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
             clampToGround: false,
             material: altitudeColor(cesiumInstance, averageAltitude, flightData),
             positions: segmentPositions,
-            width: 3,
+            width: 2,
           },
         });
 
@@ -532,7 +532,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
             new cesiumInstance.CallbackProperty(() => activeSegmentColorRef.current, false),
           ),
           positions: new cesiumInstance.CallbackProperty(() => activeSegmentPositionsRef.current, false),
-          width: 3,
+          width: 2,
         },
       });
 
