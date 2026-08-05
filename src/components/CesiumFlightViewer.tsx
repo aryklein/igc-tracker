@@ -573,21 +573,6 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
           outlineWidth: 2,
           pixelSize: 10,
         },
-        label: {
-          text: flightData.pilotName ?? flightData.filename,
-          font: "700 16px ui-sans-serif, system-ui, sans-serif",
-          fillColor: cesiumInstance.Color.WHITE,
-          outlineColor: cesiumInstance.Color.fromCssColorString("#00d9ff"),
-          outlineWidth: 2,
-          style: cesiumInstance.LabelStyle.FILL_AND_OUTLINE,
-          showBackground: true,
-          backgroundColor: cesiumInstance.Color.fromCssColorString("#07141d").withAlpha(0.82),
-          backgroundPadding: new cesiumInstance.Cartesian2(12, 7),
-          pixelOffset: new cesiumInstance.Cartesian2(0, -30),
-          verticalOrigin: cesiumInstance.VerticalOrigin.BOTTOM,
-          scaleByDistance: new cesiumInstance.NearFarScalar(500, 1, 12_000, 0.6),
-          translucencyByDistance: new cesiumInstance.NearFarScalar(8_000, 1, 20_000, 0),
-        },
       });
 
       updateCamera(firstPosition);
