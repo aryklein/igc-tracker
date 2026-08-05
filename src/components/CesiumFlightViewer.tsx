@@ -166,6 +166,8 @@ export function CesiumFlightViewer({
   const shadowPositionsRef = useRef<Cartesian3[]>([]);
   const comparisonShadowPositionsRef = useRef(new Map<string, Cartesian3[]>());
   const comparisonRenderDataRef = useRef(new Map<string, ComparisonRenderData>());
+  const comparisonSegmentEntitiesRef = useRef(new Map<string, Entity[]>());
+  const comparisonVisibleSegmentCountsRef = useRef(new Map<string, number>());
   const groundHeightsRef = useRef<number[]>([]);
   const renderPositionsRef = useRef<Cartesian3[]>([]);
   const flightRef = useRef<ParsedFlight | null>(null);
@@ -449,6 +451,26 @@ export function CesiumFlightViewer({
 
       for (const comparison of comparisonFlights) {
         const comparisonElapsed = getFlightElapsedMs(comparison.flight, timelineMs, syncMode, timelineStart);
+        const segmentEntities = comparisonSegmentEntitiesRef.current.get(comparison.id) ?? [];
+        const nextVisibleCount =
+          comparisonElapsed < 0
+            ? 0
+            : comparisonElapsed >= comparison.flight.durationMs
+              ? segmentEntities.length
+              : Math.max(0, findPointAtElapsed(comparison.flight.points, comparisonElapsed).index - 1);
+        const previousVisibleCount = comparisonVisibleSegmentCountsRef.current.get(comparison.id) ?? 0;
+
+        if (nextVisibleCount < previousVisibleCount) {
+          for (let index = nextVisibleCount; index < previousVisibleCount; index += 1) {
+            segmentEntities[index].show = false;
+          }
+        }
+
+        for (let index = previousVisibleCount; index < nextVisibleCount; index += 1) {
+          segmentEntities[index].show = true;
+        }
+
+        comparisonVisibleSegmentCountsRef.current.set(comparison.id, nextVisibleCount);
 
         if (comparisonElapsed < 0) {
           comparisonShadowPositionsRef.current.set(comparison.id, []);
@@ -607,6 +629,8 @@ export function CesiumFlightViewer({
       shadowPositionsRef.current = [];
       comparisonShadowPositionsRef.current = new Map();
       comparisonRenderDataRef.current = new Map();
+      comparisonSegmentEntitiesRef.current = new Map();
+      comparisonVisibleSegmentCountsRef.current = new Map();
       groundHeightsRef.current = [];
       renderPositionsRef.current = [];
       setCurrentMs(elapsedRef.current);
@@ -659,16 +683,25 @@ export function CesiumFlightViewer({
           }
 
           comparisonRenderDataRef.current.set(comparison.id, comparisonRenderData);
+          const segmentEntities: Entity[] = [];
 
-          viewerInstance.entities.add({
-            name: `${comparison.flight.pilotName ?? comparison.flight.filename} comparison track`,
-            polyline: {
-              clampToGround: false,
-              material: cesiumInstance.Color.fromCssColorString(comparison.color).withAlpha(0.68),
-              positions: comparisonRenderData.positions,
-              width: 2,
-            },
-          });
+          for (let index = 1; index < comparisonRenderData.positions.length; index += 1) {
+            segmentEntities.push(
+              viewerInstance.entities.add({
+                name: `${comparison.flight.pilotName ?? comparison.flight.filename} comparison track segment`,
+                show: false,
+                polyline: {
+                  clampToGround: false,
+                  material: cesiumInstance.Color.fromCssColorString(comparison.color).withAlpha(0.68),
+                  positions: [comparisonRenderData.positions[index - 1], comparisonRenderData.positions[index]],
+                  width: 2,
+                },
+              }),
+            );
+          }
+
+          comparisonSegmentEntitiesRef.current.set(comparison.id, segmentEntities);
+          comparisonVisibleSegmentCountsRef.current.set(comparison.id, 0);
           viewerInstance.entities.add({
             name: `${comparison.flight.pilotName ?? comparison.flight.filename} comparison marker`,
             position: new cesiumInstance.CallbackPositionProperty(() => {
