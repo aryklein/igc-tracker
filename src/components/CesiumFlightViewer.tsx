@@ -517,7 +517,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
             clampToGround: false,
             material: altitudeColor(cesiumInstance, averageAltitude, flightData),
             positions: segmentPositions,
-            width: 4,
+            width: 2,
           },
         });
 
@@ -532,7 +532,7 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
             new cesiumInstance.CallbackProperty(() => activeSegmentColorRef.current, false),
           ),
           positions: new cesiumInstance.CallbackProperty(() => activeSegmentPositionsRef.current, false),
-          width: 4,
+          width: 2,
         },
       });
 
@@ -541,12 +541,12 @@ export function CesiumFlightViewer({ flight }: CesiumFlightViewerProps) {
         polyline: {
           clampToGround: false,
           material: new cesiumInstance.PolylineGlowMaterialProperty({
-            color: cesiumInstance.Color.fromCssColorString("#00d9ff").withAlpha(0.72),
+            color: cesiumInstance.Color.fromCssColorString("#00d9ff").withAlpha(0.42),
             glowPower: 0.28,
             taperPower: 0.65,
           }),
           positions: new cesiumInstance.CallbackProperty(() => shadowPositionsRef.current, false),
-          width: 8,
+          width: 4,
         },
       });
 
