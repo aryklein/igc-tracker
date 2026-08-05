@@ -418,7 +418,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
                         comparedFlight.flight,
                       ),
                     )
-                  : new Cesium.ColorMaterialProperty(Cesium.Color.fromCssColorString(comparedFlight.color).withAlpha(0.72)),
+                  : new Cesium.ColorMaterialProperty(Cesium.Color.fromCssColorString(comparedFlight.color)),
               positions: [prepared.positions[index - 1], prepared.positions[index]],
               width: 3,
             },
@@ -621,7 +621,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
           segment.polyline.material =
             flights.length === 1
               ? new Cesium.ColorMaterialProperty(altitudeColor(Cesium, (from.altitude + to.altitude) / 2, renderData.flight.flight))
-              : new Cesium.ColorMaterialProperty(Cesium.Color.fromCssColorString(renderData.flight.color).withAlpha(0.72));
+              : new Cesium.ColorMaterialProperty(Cesium.Color.fromCssColorString(renderData.flight.color));
         }
       }
     }
