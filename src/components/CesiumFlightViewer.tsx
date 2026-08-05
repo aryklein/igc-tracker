@@ -31,6 +31,7 @@ type FlightRenderData = {
   beam: Entity;
   groundTarget: Entity;
   beamPositions: Cartesian3[];
+  activeSegmentPositions: Cartesian3[];
   groundTargetPosition: Cartesian3 | undefined;
   visibleSegmentCount: number;
 };
@@ -306,6 +307,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
           renderData.groundTarget.show = false;
           renderData.activeSegment.show = false;
           renderData.beamPositions.length = 0;
+          renderData.activeSegmentPositions.length = 0;
           renderData.groundTargetPosition = undefined;
 
           for (const segment of renderData.segmentEntities) {
@@ -372,10 +374,12 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         renderData.marker.position = new Cesium.ConstantPositionProperty(result.position);
         renderData.beamPositions.splice(0, renderData.beamPositions.length, groundPosition, result.position);
         renderData.groundTargetPosition = groundPosition;
-        renderData.activeSegment.polyline!.positions = new Cesium.ConstantProperty([
+        renderData.activeSegmentPositions.splice(
+          0,
+          renderData.activeSegmentPositions.length,
           renderData.positions[Math.max(0, result.current.index - 1)],
           result.position,
-        ]);
+        );
 
         if (isFollowed) {
           updateCamera(result.position);
@@ -432,13 +436,14 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
           pixelSize: 10,
         },
       });
+      const activeSegmentPositions: Cartesian3[] = [];
       const activeSegment = viewer.entities.add({
         name: `${comparedFlight.flight.pilotName ?? comparedFlight.flight.filename} active flight track segment`,
         show: false,
         polyline: {
           clampToGround: false,
           material: new Cesium.ColorMaterialProperty(Cesium.Color.fromCssColorString(comparedFlight.color)),
-          positions: [],
+          positions: new Cesium.CallbackProperty(() => activeSegmentPositions, false),
           width: 3,
         },
       });
@@ -476,6 +481,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         ...prepared,
         segmentEntities,
         activeSegment,
+        activeSegmentPositions,
         marker,
         beam,
         groundTarget,
