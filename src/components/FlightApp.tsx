@@ -65,9 +65,8 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
         />
       </aside>
       <CesiumFlightViewer
-        comparisonFlights={flights.filter((entry) => entry.id !== primaryFlight?.id)}
-        flight={primaryFlight?.flight ?? null}
-        primaryColor={primaryFlight?.color}
+        flights={flights}
+        followedFlightId={primaryFlight?.id ?? null}
         syncMode={syncMode}
       />
     </main>
