@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { formatDistance, formatDuration } from "@/lib/flightMath";
 import { parseIgcFile } from "@/lib/igcParser";
-import type { ComparedFlight, ParsedFlight } from "@/types/flight";
+import type { ComparedFlight, FlightSyncMode, ParsedFlight } from "@/types/flight";
 
 const MAX_COMPARISON_FLIGHTS = 5;
 
@@ -14,6 +14,8 @@ type FileUploadProps = {
   onFlightsLoaded: (flights: Array<{ flight: ParsedFlight; sourceText: string }>) => void;
   onPrimaryFlightChange: (id: string) => void;
   onFlightRemoved: (id: string) => void;
+  syncMode: FlightSyncMode;
+  onSyncModeChange: (syncMode: FlightSyncMode) => void;
 };
 
 type ShareResponse = {
@@ -63,6 +65,8 @@ export function FileUpload({
   onFlightsLoaded,
   onPrimaryFlightChange,
   onFlightRemoved,
+  syncMode,
+  onSyncModeChange,
 }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -212,8 +216,19 @@ export function FileUpload({
         <section className="comparison-flights" aria-label="Compared flights">
           <div className="comparison-flights-heading">
             <span>Compared flights</span>
-            <small>Follow one pilot; all tracks begin from launch.</small>
+            <small>Follow one pilot and compare the moving markers.</small>
           </div>
+          {flights.length > 1 ? (
+            <fieldset className="sync-mode" aria-label="Comparison time sync">
+              <legend>Sync time</legend>
+              <button className={syncMode === "launch" ? "active" : ""} type="button" onClick={() => onSyncModeChange("launch")}>
+                From launch
+              </button>
+              <button className={syncMode === "actual" ? "active" : ""} type="button" onClick={() => onSyncModeChange("actual")}>
+                Actual time
+              </button>
+            </fieldset>
+          ) : null}
           {flights.map((entry) => {
             const displayName = entry.flight.pilotName ?? entry.flight.filename;
             const isPrimary = entry.id === primaryFlightId;

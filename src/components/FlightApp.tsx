@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CesiumFlightViewer } from "./CesiumFlightViewer";
 import { FileUpload } from "./FileUpload";
-import type { ComparedFlight, ParsedFlight } from "@/types/flight";
+import type { ComparedFlight, FlightSyncMode, ParsedFlight } from "@/types/flight";
 
 const COMPARISON_COLORS = ["#00d9ff", "#ff6b4a", "#a6e22e", "#b88cff", "#ffd166"];
 
@@ -20,6 +20,7 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
       : [],
   );
   const [primaryFlightId, setPrimaryFlightId] = useState<string | null>(initialFlight ? "initial-flight" : null);
+  const [syncMode, setSyncMode] = useState<FlightSyncMode>("launch");
   const primaryFlight = flights.find((entry) => entry.id === primaryFlightId) ?? flights[0] ?? null;
 
   function handleFlightsLoaded(nextFlights: Array<{ flight: ParsedFlight; sourceText: string }>) {
@@ -59,12 +60,15 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
           onFlightRemoved={handleFlightRemoved}
           onFlightsLoaded={handleFlightsLoaded}
           onPrimaryFlightChange={setPrimaryFlightId}
+          onSyncModeChange={setSyncMode}
+          syncMode={syncMode}
         />
       </aside>
       <CesiumFlightViewer
         comparisonFlights={flights.filter((entry) => entry.id !== primaryFlight?.id)}
         flight={primaryFlight?.flight ?? null}
         primaryColor={primaryFlight?.color}
+        syncMode={syncMode}
       />
     </main>
   );

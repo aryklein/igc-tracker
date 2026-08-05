@@ -27,3 +27,5 @@ export type ComparedFlight = {
   sourceText: string | null;
   color: string;
 };
+
+export type FlightSyncMode = "launch" | "actual";
