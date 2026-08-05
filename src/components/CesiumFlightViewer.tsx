@@ -407,12 +407,14 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
               clampToGround: false,
               material:
                 flights.length === 1
-                  ? altitudeColor(
-                      Cesium,
-                      (comparedFlight.flight.points[index - 1].altitude + comparedFlight.flight.points[index].altitude) / 2,
-                      comparedFlight.flight,
+                  ? new Cesium.ColorMaterialProperty(
+                      altitudeColor(
+                        Cesium,
+                        (comparedFlight.flight.points[index - 1].altitude + comparedFlight.flight.points[index].altitude) / 2,
+                        comparedFlight.flight,
+                      ),
                     )
-                  : Cesium.Color.fromCssColorString(comparedFlight.color).withAlpha(0.72),
+                  : new Cesium.ColorMaterialProperty(Cesium.Color.fromCssColorString(comparedFlight.color).withAlpha(0.72)),
               positions: [prepared.positions[index - 1], prepared.positions[index]],
               width: 3,
             },
@@ -435,7 +437,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         show: false,
         polyline: {
           clampToGround: false,
-          material: Cesium.Color.fromCssColorString(comparedFlight.color),
+          material: new Cesium.ColorMaterialProperty(Cesium.Color.fromCssColorString(comparedFlight.color)),
           positions: [],
           width: 3,
         },
