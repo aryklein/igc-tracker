@@ -30,6 +30,7 @@ type FlightRenderData = {
   marker: Entity;
   beam: Entity;
   groundTarget: Entity;
+  beamPositions: Cartesian3[];
   visibleSegmentCount: number;
 };
 
@@ -303,6 +304,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
           renderData.beam.show = false;
           renderData.groundTarget.show = false;
           renderData.activeSegment.show = false;
+          renderData.beamPositions.length = 0;
 
           for (const segment of renderData.segmentEntities) {
             segment.show = false;
@@ -360,8 +362,13 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
           (renderData.groundHeights[nextIndex] - renderData.groundHeights[previousIndex]) * t;
         const groundPosition = Cesium.Cartesian3.fromDegrees(result.current.point.longitude, result.current.point.latitude, groundHeight);
 
+        if (!result.position) {
+          renderData.beamPositions.length = 0;
+          continue;
+        }
+
         renderData.marker.position = new Cesium.ConstantPositionProperty(result.position);
-        renderData.beam.polyline!.positions = new Cesium.ConstantProperty([groundPosition, result.position]);
+        renderData.beamPositions.splice(0, renderData.beamPositions.length, groundPosition, result.position);
         renderData.groundTarget.position = new Cesium.ConstantPositionProperty(groundPosition);
         renderData.activeSegment.polyline!.positions = new Cesium.ConstantProperty([
           renderData.positions[Math.max(0, result.current.index - 1)],
@@ -431,6 +438,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
           width: 3,
         },
       });
+      const beamPositions: Cartesian3[] = [];
       const beam = viewer.entities.add({
         name: `${comparedFlight.flight.pilotName ?? comparedFlight.flight.filename} altitude projection beam`,
         polyline: {
@@ -440,7 +448,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
             glowPower: 0.22,
             taperPower: 0.7,
           }),
-          positions: [],
+          positions: new Cesium.CallbackProperty(() => beamPositions, false),
           width: 2,
         },
       });
@@ -465,6 +473,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         marker,
         beam,
         groundTarget,
+        beamPositions,
         visibleSegmentCount: 0,
       };
     },
