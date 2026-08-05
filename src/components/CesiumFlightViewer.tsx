@@ -31,6 +31,7 @@ type FlightRenderData = {
   beam: Entity;
   groundTarget: Entity;
   beamPositions: Cartesian3[];
+  groundTargetPosition: Cartesian3 | undefined;
   visibleSegmentCount: number;
 };
 
@@ -305,6 +306,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
           renderData.groundTarget.show = false;
           renderData.activeSegment.show = false;
           renderData.beamPositions.length = 0;
+          renderData.groundTargetPosition = undefined;
 
           for (const segment of renderData.segmentEntities) {
             segment.show = false;
@@ -369,7 +371,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
 
         renderData.marker.position = new Cesium.ConstantPositionProperty(result.position);
         renderData.beamPositions.splice(0, renderData.beamPositions.length, groundPosition, result.position);
-        renderData.groundTarget.position = new Cesium.ConstantPositionProperty(groundPosition);
+        renderData.groundTargetPosition = groundPosition;
         renderData.activeSegment.polyline!.positions = new Cesium.ConstantProperty([
           renderData.positions[Math.max(0, result.current.index - 1)],
           result.position,
@@ -452,9 +454,11 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
           width: 2,
         },
       });
+      let groundTargetPosition: Cartesian3 | undefined;
       const groundTarget = viewer.entities.add({
         name: `${comparedFlight.flight.pilotName ?? comparedFlight.flight.filename} ground projection target`,
         show: false,
+        position: new Cesium.CallbackPositionProperty(() => groundTargetPosition, false),
         ellipse: {
           semiMajorAxis: 38,
           semiMinorAxis: 38,
@@ -474,6 +478,12 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         beam,
         groundTarget,
         beamPositions,
+        get groundTargetPosition() {
+          return groundTargetPosition;
+        },
+        set groundTargetPosition(position: Cartesian3 | undefined) {
+          groundTargetPosition = position;
+        },
         visibleSegmentCount: 0,
       };
     },
