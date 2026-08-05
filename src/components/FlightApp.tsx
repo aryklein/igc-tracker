@@ -24,10 +24,11 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
   const primaryFlight = flights.find((entry) => entry.id === primaryFlightId) ?? flights[0] ?? null;
 
   function handleFlightsLoaded(nextFlights: Array<{ flight: ParsedFlight; sourceText: string }>) {
+    const availableColors = COMPARISON_COLORS.filter((color) => !flights.some((flight) => flight.color === color));
     const additions = nextFlights.map((entry, index) => ({
       id: crypto.randomUUID(),
       ...entry,
-      color: COMPARISON_COLORS[(flights.length + index) % COMPARISON_COLORS.length],
+      color: availableColors[index],
     }));
 
     setFlights((currentFlights) => [...currentFlights, ...additions]);
