@@ -91,11 +91,20 @@ export function FileUpload({
       const files = selectedFiles.slice(0, Math.max(0, remainingSlots));
       const loadedFlights: Array<{ flight: ParsedFlight; sourceText: string }> = [];
       const failedFiles: string[] = [];
+      const duplicateFiles: string[] = [];
+      const sourceTexts = new Set(flights.map((entry) => entry.sourceText).filter((sourceText): sourceText is string => Boolean(sourceText)));
 
       for (const file of files) {
         try {
           const content = await readFileAsText(file);
+
+          if (sourceTexts.has(content)) {
+            duplicateFiles.push(file.name);
+            continue;
+          }
+
           loadedFlights.push({ flight: parseIgcFile(content, file.name), sourceText: content });
+          sourceTexts.add(content);
         } catch {
           failedFiles.push(file.name);
         }
@@ -115,6 +124,8 @@ export function FileUpload({
         setError(`Added ${loadedFlights.length} flight${loadedFlights.length === 1 ? "" : "s"}. You can compare up to ${MAX_COMPARISON_FLIGHTS} flights at once.`);
       } else if (failedFiles.length > 0) {
         setError(`Could not parse: ${failedFiles.join(", ")}.`);
+      } else if (duplicateFiles.length > 0) {
+        setError(`Already loaded: ${duplicateFiles.join(", ")}.`);
       }
     } finally {
       event.target.value = "";
