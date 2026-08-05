@@ -3,13 +3,17 @@
 import { useRef, useState } from "react";
 import { formatDistance, formatDuration } from "@/lib/flightMath";
 import { parseIgcFile } from "@/lib/igcParser";
-import type { ParsedFlight } from "@/types/flight";
+import type { ComparedFlight, ParsedFlight } from "@/types/flight";
+
+const MAX_COMPARISON_FLIGHTS = 5;
 
 type FileUploadProps = {
-  flight: ParsedFlight | null;
-  sourceText: string | null;
+  flights: ComparedFlight[];
+  primaryFlightId: string | null;
   allowSharing: boolean;
-  onFlightLoaded: (flight: ParsedFlight, sourceText: string) => void;
+  onFlightsLoaded: (flights: Array<{ flight: ParsedFlight; sourceText: string }>) => void;
+  onPrimaryFlightChange: (id: string) => void;
+  onFlightRemoved: (id: string) => void;
 };
 
 type ShareResponse = {
@@ -52,7 +56,14 @@ function readFileAsText(file: File) {
   });
 }
 
-export function FileUpload({ flight, sourceText, allowSharing, onFlightLoaded }: FileUploadProps) {
+export function FileUpload({
+  flights,
+  primaryFlightId,
+  allowSharing,
+  onFlightsLoaded,
+  onPrimaryFlightChange,
+  onFlightRemoved,
+}: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
@@ -60,33 +71,54 @@ export function FileUpload({ flight, sourceText, allowSharing, onFlightLoaded }:
   const [shareExpiresAt, setShareExpiresAt] = useState<string | null>(null);
   const [didCopyShareLink, setDidCopyShareLink] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const primaryFlight = flights.find((entry) => entry.id === primaryFlightId) ?? null;
+  const canShare = allowSharing && flights.length === 1 && primaryFlight?.sourceText;
 
   async function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+    const selectedFiles = [...(event.target.files ?? [])];
+    const remainingSlots = MAX_COMPARISON_FLIGHTS - flights.length;
 
-    if (!file) {
+    if (selectedFiles.length === 0) {
       return;
     }
 
     try {
       setError(null);
-      const content = await readFileAsText(file);
-      const flight = parseIgcFile(content, file.name);
+      const files = selectedFiles.slice(0, Math.max(0, remainingSlots));
+      const loadedFlights: Array<{ flight: ParsedFlight; sourceText: string }> = [];
+      const failedFiles: string[] = [];
 
-      setShareError(null);
-      setShareLink(null);
-      setShareExpiresAt(null);
-      setDidCopyShareLink(false);
-      onFlightLoaded(flight, content);
-    } catch (unknownError) {
-      setError(unknownError instanceof Error ? unknownError.message : "Could not parse this IGC file.");
+      for (const file of files) {
+        try {
+          const content = await readFileAsText(file);
+          loadedFlights.push({ flight: parseIgcFile(content, file.name), sourceText: content });
+        } catch {
+          failedFiles.push(file.name);
+        }
+      }
+
+      if (loadedFlights.length > 0) {
+        setShareError(null);
+        setShareLink(null);
+        setShareExpiresAt(null);
+        setDidCopyShareLink(false);
+        onFlightsLoaded(loadedFlights);
+      }
+
+      if (remainingSlots <= 0) {
+        setError(`You can compare up to ${MAX_COMPARISON_FLIGHTS} flights at once.`);
+      } else if (selectedFiles.length > remainingSlots) {
+        setError(`Added ${loadedFlights.length} flight${loadedFlights.length === 1 ? "" : "s"}. You can compare up to ${MAX_COMPARISON_FLIGHTS} flights at once.`);
+      } else if (failedFiles.length > 0) {
+        setError(`Could not parse: ${failedFiles.join(", ")}.`);
+      }
     } finally {
       event.target.value = "";
     }
   }
 
   async function handleShare() {
-    if (!flight || !sourceText || isSharing) {
+    if (!primaryFlight || !primaryFlight.sourceText || isSharing) {
       return;
     }
 
@@ -96,7 +128,11 @@ export function FileUpload({ flight, sourceText, allowSharing, onFlightLoaded }:
       const response = await fetch("/api/flights/share", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ content: sourceText, filename: flight.filename, title: flight.filename }),
+        body: JSON.stringify({
+          content: primaryFlight.sourceText,
+          filename: primaryFlight.flight.filename,
+          title: primaryFlight.flight.filename,
+        }),
       });
       const payload = await readShareResponse(response);
 
@@ -139,17 +175,19 @@ export function FileUpload({ flight, sourceText, allowSharing, onFlightLoaded }:
     <>
       <div className="upload-card">
         <button className="upload-target" type="button" onClick={() => inputRef.current?.click()}>
-          <strong>Upload IGC Flight</strong>
+          <strong>{flights.length === 0 ? "Upload IGC Flights" : "Add IGC Flight"}</strong>
+          <span>{flights.length}/{MAX_COMPARISON_FLIGHTS} flights loaded</span>
         </button>
         <input
           ref={inputRef}
           accept=".igc,.IGC,text/plain,application/octet-stream"
           className="file-input"
+          multiple
           type="file"
           onChange={handleChange}
         />
         {error ? <p className="upload-error">{error}</p> : null}
-        {allowSharing && flight && sourceText ? (
+        {canShare ? (
           <div className="share-panel">
             <button type="button" onClick={handleShare} disabled={isSharing}>
                {isSharing ? "Creating link..." : "Share flight for 72h"}
@@ -168,35 +206,61 @@ export function FileUpload({ flight, sourceText, allowSharing, onFlightLoaded }:
             {shareError ? <p className="upload-error">{shareError}</p> : null}
           </div>
         ) : null}
+        {allowSharing && flights.length > 1 ? <p className="upload-status">Comparison sessions stay in this browser and cannot be shared yet.</p> : null}
       </div>
-      {flight ? (
+      {flights.length > 0 ? (
+        <section className="comparison-flights" aria-label="Compared flights">
+          <div className="comparison-flights-heading">
+            <span>Compared flights</span>
+            <small>Follow one pilot; all tracks begin from launch.</small>
+          </div>
+          {flights.map((entry) => {
+            const displayName = entry.flight.pilotName ?? entry.flight.filename;
+            const isPrimary = entry.id === primaryFlightId;
+
+            return (
+              <div className={isPrimary ? "comparison-flight active" : "comparison-flight"} key={entry.id}>
+                <button type="button" onClick={() => onPrimaryFlightChange(entry.id)}>
+                  <i aria-hidden="true" style={{ background: entry.color }} />
+                  <span>{displayName}</span>
+                  <small>{isPrimary ? "Following" : "Follow"}</small>
+                </button>
+                <button aria-label={`Remove ${displayName}`} className="comparison-remove" type="button" onClick={() => onFlightRemoved(entry.id)}>
+                  ×
+                </button>
+              </div>
+            );
+          })}
+        </section>
+      ) : null}
+      {primaryFlight ? (
         <section className="flight-summary" aria-label="Loaded flight summary">
-          <span>Loaded flight</span>
+          <span>Following flight</span>
           <dl>
             <div>
               <dt>Time</dt>
-              <dd>{formatDuration(flight.durationMs)}</dd>
+              <dd>{formatDuration(primaryFlight.flight.durationMs)}</dd>
             </div>
             <div>
               <dt>Distance</dt>
-              <dd>{formatDistance(flight.distanceMeters)}</dd>
+              <dd>{formatDistance(primaryFlight.flight.distanceMeters)}</dd>
             </div>
             <div>
               <dt>Altitude</dt>
               <dd>
-                {Math.round(flight.minAltitude)}-{Math.round(flight.maxAltitude)} m
+                {Math.round(primaryFlight.flight.minAltitude)}-{Math.round(primaryFlight.flight.maxAltitude)} m
               </dd>
             </div>
-            {flight.pilotName ? (
+            {primaryFlight.flight.pilotName ? (
               <div>
                 <dt>Pilot</dt>
-                <dd>{flight.pilotName}</dd>
+                <dd>{primaryFlight.flight.pilotName}</dd>
               </div>
             ) : null}
-            {flight.gliderModel ? (
+            {primaryFlight.flight.gliderModel ? (
               <div>
                 <dt>Glider</dt>
-                <dd>{flight.gliderModel}</dd>
+                <dd>{primaryFlight.flight.gliderModel}</dd>
               </div>
             ) : null}
           </dl>
