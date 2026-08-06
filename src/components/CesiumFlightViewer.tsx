@@ -157,7 +157,7 @@ function getFlightElapsedMs(flight: ParsedFlight, timelineMs: number, syncMode: 
   return timelineStart + timelineMs - flight.startTime;
 }
 
-export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "launch" }: CesiumFlightViewerProps) {
+export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "actual" }: CesiumFlightViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cesiumRef = useRef<CesiumModule | null>(null);
   const viewerRef = useRef<Viewer | null>(null);
