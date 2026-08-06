@@ -6,8 +6,23 @@ import { CesiumFlightViewer } from "./CesiumFlightViewer";
 import { FileUpload } from "./FileUpload";
 import type { ComparedFlight, FlightSyncMode, ParsedFlight } from "@/types/flight";
 
-const COMPARISON_COLORS = ["#00d9ff", "#ff6b4a", "#a6e22e", "#b88cff", "#ffd166"];
-
+const COMPARISON_COLORS = [
+  "#00d9ff",
+  "#ff7f62",
+  "#a6e22e",
+  "#b88cff",
+  "#ffd166",
+  '#E6194B',
+  '#3CB44B',
+  '#19d5ff',
+  '#F58231',
+  '#e4ff9f',
+  '#5d7ae6',
+  '#9e2626',
+  '#42D4F4',
+  '#F032E6',
+  '#F5A623',
+];
 type FlightAppProps = {
   initialFlight?: ParsedFlight | null;
   initialSourceText?: string | null;
@@ -21,7 +36,7 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
       : [],
   );
   const [primaryFlightId, setPrimaryFlightId] = useState<string | null>(initialFlight ? "initial-flight" : null);
-  const [syncMode, setSyncMode] = useState<FlightSyncMode>("launch");
+  const [syncMode, setSyncMode] = useState<FlightSyncMode>("actual");
   const primaryFlight = flights.find((entry) => entry.id === primaryFlightId) ?? flights[0] ?? null;
 
   function handleFlightsLoaded(nextFlights: Array<{ flight: ParsedFlight; sourceText: string }>) {
