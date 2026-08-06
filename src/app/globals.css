@@ -109,77 +109,27 @@ button {
 }
 
 .app-logo-ring,
-.app-logo-brake-handle,
-.app-logo-brake-line,
-.app-logo-canopy-cut,
-.app-logo-harness,
-.app-logo-line,
-.app-logo-pilot-arm,
-.app-logo-pilot-foot,
-.app-logo-pilot-leg,
-.app-logo-rib,
 .app-logo-track {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.app-logo-canopy,
-.app-logo-pilot-body,
-.app-logo-pilot-head {
+.app-logo-reference-fill {
   fill: var(--foreground);
 }
 
-.app-logo-ring,
-.app-logo-brake-handle,
-.app-logo-brake-line,
-.app-logo-harness,
-.app-logo-line,
-.app-logo-pilot-arm,
-.app-logo-pilot-foot,
-.app-logo-pilot-leg {
+.app-logo-ring {
   stroke: var(--foreground);
 }
 
 .app-logo-ring {
-  stroke-width: 5;
+  stroke-width: 26;
 }
 
-.app-logo-canopy-cut,
-.app-logo-rib,
 .app-logo-track {
   stroke: var(--accent);
-}
-
-.app-logo-line {
-  stroke-width: 2.2;
-}
-
-.app-logo-brake-line {
-  stroke-width: 1.5;
-}
-
-.app-logo-brake-handle {
-  stroke-width: 2.5;
-}
-
-.app-logo-canopy-cut,
-.app-logo-harness,
-.app-logo-pilot-arm,
-.app-logo-pilot-foot,
-.app-logo-pilot-leg,
-.app-logo-rib {
-  stroke-width: 2;
-}
-
-.app-logo-pilot-arm,
-.app-logo-pilot-foot,
-.app-logo-pilot-leg {
-  stroke-width: 4;
-}
-
-.app-logo-track {
-  stroke-width: 2.5;
+  stroke-width: 10;
 }
 
 .intro-panel h1 {
