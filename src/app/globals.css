@@ -98,9 +98,18 @@ button {
 }
 
 .app-logo {
-  width: 58px;
+  width: 64px;
   height: auto;
   flex: 0 0 auto;
+}
+
+.app-logo-ring,
+.app-logo-highlight,
+.app-logo-line,
+.app-logo-track {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .app-logo-wing,
@@ -108,20 +117,30 @@ button {
   fill: var(--foreground);
 }
 
-.app-logo-line,
+.app-logo-ring,
+.app-logo-line {
+  stroke: var(--foreground);
+}
+
+.app-logo-ring {
+  stroke-width: 6;
+}
+
+.app-logo-highlight,
 .app-logo-track {
-  fill: none;
   stroke: var(--accent);
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 .app-logo-line {
+  stroke-width: 2.5;
+}
+
+.app-logo-highlight {
   stroke-width: 3;
 }
 
 .app-logo-track {
-  stroke-width: 4;
+  stroke-width: 3;
 }
 
 .intro-panel h1 {
