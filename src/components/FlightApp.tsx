@@ -49,8 +49,9 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
 
     setFlights((currentFlights) => [...currentFlights, ...additions]);
 
-    if (!primaryFlightId && additions[0]) {
-      setPrimaryFlightId(additions[0].id);
+    if (!primaryFlightId && additions.length > 0) {
+      const firstFlight = additions.reduce((x, prev) => x.flight.startTime < prev.flight.startTime ? x : prev, additions[0])
+      setPrimaryFlightId(firstFlight.id);
     }
   }
 
