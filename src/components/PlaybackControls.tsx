@@ -9,10 +9,12 @@ type PlaybackControlsProps = {
   currentTimestamp: number | null;
   durationMs: number;
   isPlaying: boolean;
+  showLabels: boolean;
   speed: number;
   onPlayPause: () => void;
   onReset: () => void;
   onSeek: (elapsedMs: number) => void;
+  onShowLabelsChange: (enabled: boolean) => void;
   onSpeedChange: (speed: number) => void;
 };
 
@@ -21,10 +23,12 @@ export function PlaybackControls({
   currentTimestamp,
   durationMs,
   isPlaying,
+  showLabels,
   speed,
   onPlayPause,
   onReset,
   onSeek,
+  onShowLabelsChange,
   onSpeedChange,
 }: PlaybackControlsProps) {
   const localTime = currentTimestamp
@@ -45,6 +49,10 @@ export function PlaybackControls({
         <button aria-label="Reset" className="icon-button" type="button" onClick={onReset}>
           ↺
         </button>
+        <label className="label-toggle">
+          <input type="checkbox" checked={showLabels} onChange={(event) => onShowLabelsChange(event.target.checked)} />
+          Labels
+        </label>
         <span>
           {formatDuration(currentMs)} / {formatDuration(durationMs)}
         </span>

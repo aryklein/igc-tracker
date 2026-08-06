@@ -5,7 +5,7 @@ import { formatDistance, formatDuration } from "@/lib/flightMath";
 import { parseIgcFile } from "@/lib/igcParser";
 import type { ComparedFlight, FlightSyncMode, ParsedFlight } from "@/types/flight";
 
-const MAX_COMPARISON_FLIGHTS = 5;
+const MAX_COMPARISON_FLIGHTS = 10;
 
 type FileUploadProps = {
   flights: ComparedFlight[];
