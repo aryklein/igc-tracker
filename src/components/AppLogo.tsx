@@ -12,15 +12,19 @@ export function AppLogo() {
       <path className="app-logo-line" d="M79 51L80 108" />
       <path className="app-logo-line" d="M111 50L87 109" />
       <path className="app-logo-line" d="M130 61L91 111" />
-      <path className="app-logo-harness" d="M70 110C73 120 87 121 94 111" />
-      <circle className="app-logo-pilot-head" cx="82" cy="110" r="6" />
-      <path className="app-logo-pilot-body" d="M75 118C81 114 91 117 96 126L89 133C82 131 76 126 75 118Z" />
-      <path className="app-logo-pilot-arm" d="M76 119C71 123 69 128 70 134" />
-      <path className="app-logo-pilot-arm" d="M93 121C99 116 100 109 99 103" />
-      <path className="app-logo-pilot-leg" d="M89 132L100 144" />
-      <path className="app-logo-pilot-leg" d="M96 128L113 135" />
-      <path className="app-logo-pilot-foot" d="M100 144L108 141" />
-      <path className="app-logo-pilot-foot" d="M113 135L119 131" />
+      <path className="app-logo-brake-line" d="M67 91L71 113" />
+      <path className="app-logo-brake-line" d="M100 89L94 113" />
+      <path className="app-logo-brake-handle" d="M67 91L73 93" />
+      <path className="app-logo-brake-handle" d="M100 89L94 91" />
+      <path className="app-logo-harness" d="M70 122C76 111 91 111 101 124L95 136C85 138 74 133 70 122Z" />
+      <circle className="app-logo-pilot-head" cx="83" cy="108" r="6" />
+      <path className="app-logo-pilot-body" d="M75 116C81 112 91 115 96 124L91 130C83 128 77 124 75 116Z" />
+      <path className="app-logo-pilot-arm" d="M77 117C72 111 70 104 71 95" />
+      <path className="app-logo-pilot-arm" d="M94 119C99 111 101 103 100 93" />
+      <path className="app-logo-pilot-leg" d="M91 130L105 139" />
+      <path className="app-logo-pilot-leg" d="M96 125L113 133" />
+      <path className="app-logo-pilot-foot" d="M105 139L113 137" />
+      <path className="app-logo-pilot-foot" d="M113 133L120 129" />
       <path className="app-logo-track" d="M28 101C39 115 54 127 73 137" />
     </svg>
   );

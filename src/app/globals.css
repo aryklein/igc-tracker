@@ -109,6 +109,8 @@ button {
 }
 
 .app-logo-ring,
+.app-logo-brake-handle,
+.app-logo-brake-line,
 .app-logo-canopy-cut,
 .app-logo-harness,
 .app-logo-line,
@@ -129,6 +131,8 @@ button {
 }
 
 .app-logo-ring,
+.app-logo-brake-handle,
+.app-logo-brake-line,
 .app-logo-harness,
 .app-logo-line,
 .app-logo-pilot-arm,
@@ -149,6 +153,14 @@ button {
 
 .app-logo-line {
   stroke-width: 2.2;
+}
+
+.app-logo-brake-line {
+  stroke-width: 1.5;
+}
+
+.app-logo-brake-handle {
+  stroke-width: 2.5;
 }
 
 .app-logo-canopy-cut,
