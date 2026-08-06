@@ -94,7 +94,7 @@ button {
 .app-logo {
   width: min(100%, 250px);
   height: auto;
-  color: var(--foreground);
+  filter: brightness(0) invert(1);
   flex: 0 0 auto;
 }
 
