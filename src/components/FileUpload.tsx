@@ -5,7 +5,7 @@ import { formatDistance, formatDuration } from "@/lib/flightMath";
 import { parseIgcFile } from "@/lib/igcParser";
 import type { ComparedFlight, FlightSyncMode, ParsedFlight } from "@/types/flight";
 
-const MAX_COMPARISON_FLIGHTS = 10;
+const MAX_COMPARISON_FLIGHTS = 5;
 
 type FileUploadProps = {
   flights: ComparedFlight[];
@@ -232,11 +232,11 @@ export function FileUpload({
           {flights.length > 1 ? (
             <fieldset className="sync-mode" aria-label="Comparison time sync">
               <legend>Sync time</legend>
-              <button className={syncMode === "actual" ? "active" : ""} type="button" onClick={() => onSyncModeChange("actual")}>
-                Actual time
-              </button>
               <button className={syncMode === "launch" ? "active" : ""} type="button" onClick={() => onSyncModeChange("launch")}>
                 From launch
+              </button>
+              <button className={syncMode === "actual" ? "active" : ""} type="button" onClick={() => onSyncModeChange("actual")}>
+                Actual time
               </button>
             </fieldset>
           ) : null}

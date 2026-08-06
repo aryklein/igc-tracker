@@ -690,55 +690,6 @@ button {
   letter-spacing: 0.02em;
 }
 
-.show-labels {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.show-labels label {
-  display: flex;
-  color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-.show-labels input {
-  margin-right: 5px;
-  appearance: none;
-  -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
-  border: 2px solid #ffffff1f;
-  border-radius: 6px;
-  cursor: pointer;
-  position: relative;
-  outline: none;
-  transition: background-color 0.2s, border-color 0.2s;
-}
-
-.show-labels input:checked {
-  background-color: transparent;
-  border-color: #ffffff1f;
-}
-
-/* Draw the checkmark */
-.show-labels input:checked::after {
-  content: "";
-  position: absolute;
-  left: 5px;
-  top: 1px;
-  width: 5px;
-  height: 10px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-
 .progress-control input {
   width: 100%;
   accent-color: var(--accent);
