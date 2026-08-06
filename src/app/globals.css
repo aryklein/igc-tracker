@@ -88,60 +88,19 @@ button {
 .brand-lockup {
   display: flex;
   align-items: center;
-  gap: 16px;
   margin-bottom: 24px;
 }
 
-.brand-wordmark {
-  color: var(--accent);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
-  font-size: clamp(1.9rem, 5vw, 2.8rem);
-  font-weight: 500;
-  letter-spacing: -0.09em;
-  line-height: 0.9;
-  text-shadow: 0 0 30px rgba(255, 122, 26, 0.3);
-}
-
 .app-logo {
-  width: clamp(88px, 9vw, 112px);
+  width: min(100%, 320px);
   height: auto;
   flex: 0 0 auto;
 }
 
-.app-logo-ring,
-.app-logo-reference-line,
-.app-logo-track {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.app-logo-reference-fill {
-  fill: var(--foreground);
-}
-
-.app-logo-ring {
-  stroke: var(--foreground);
-}
-
-.app-logo-ring {
-  stroke-width: 26;
-}
-
-.app-logo-track {
-  stroke: var(--accent);
-  stroke-width: 10;
-}
-
-.app-logo-reference-line {
-  stroke: var(--foreground);
-  stroke-width: 4;
-}
-
 .intro-panel h1 {
-  font-size: clamp(1.7rem, 3.4vw, 2.8rem);
-  letter-spacing: -0.06em;
-  line-height: 1;
+  font-size: clamp(1.35rem, 2.6vw, 2.1rem);
+  letter-spacing: -0.05em;
+  line-height: 1.05;
   margin-bottom: 22px;
 }
 
