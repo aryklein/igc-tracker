@@ -39,11 +39,13 @@ type FlightRenderData = {
   labelPosition: Cartesian3 | undefined;
   groundTargetPosition: Cartesian3 | undefined;
   isFollowed: boolean;
+  visibleSegmentStart: number;
   visibleSegmentCount: number;
 };
 
 const VISUAL_TERRAIN_CLEARANCE_METERS = 8;
 const VARIO_WINDOW_MS = 10_000;
+const DEFAULT_TRAIL_DURATION_MIN = Number.POSITIVE_INFINITY;
 
 declare global {
   interface Window {
@@ -167,6 +169,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "actu
   const lastFrameRef = useRef<number | null>(null);
   const isPlayingRef = useRef(false);
   const speedRef = useRef(8);
+  const trailMinRef = useRef(DEFAULT_TRAIL_DURATION_MIN);
   const followedFlightIdRef = useRef<string | null>(followedFlightId);
   const syncModeRef = useRef<FlightSyncMode>(syncMode);
   const orbitRef = useRef({ heading: 0, pitch: -0.75, range: 2200 });
@@ -174,7 +177,8 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "actu
   const [isReady, setIsReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [speed, setSpeed] = useState(8);
+  const [speed, setSpeed] = useState(10);
+  const [trailMin, setTrailMin] = useState(DEFAULT_TRAIL_DURATION_MIN);
   const [currentMs, setCurrentMs] = useState(0);
   const [currentPoint, setCurrentPoint] = useState<FlightPoint | null>(null);
   const [currentAgl, setCurrentAgl] = useState<number | null>(null);
@@ -325,6 +329,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "actu
             segment.show = false;
           }
 
+          renderData.visibleSegmentStart = 0;
           renderData.visibleSegmentCount = 0;
 
           if (isFollowed) {
@@ -336,22 +341,48 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "actu
           continue;
         }
 
-        const nextVisibleCount =
+        const nextVisibleEnd =
           result.flightElapsed >= renderData.flight.flight.durationMs
             ? renderData.segmentEntities.length
             : Math.max(0, result.current.index - 1);
 
-        if (nextVisibleCount < renderData.visibleSegmentCount) {
-          for (let index = nextVisibleCount; index < renderData.visibleSegmentCount; index += 1) {
+        const trailWindowMin = trailMinRef.current;
+        let nextVisibleStart = 0;
+
+        if (Number.isFinite(trailWindowMin)) {
+          const trailStartElapsed = result.flightElapsed - (trailWindowMin * 60 * 1000);
+
+          if (trailStartElapsed > 0) {
+            const trailStartPoint = findPointAtElapsed(renderData.flight.flight.points, trailStartElapsed);
+            nextVisibleStart = Math.max(0, Math.min(nextVisibleEnd, trailStartPoint.index - 1));
+          }
+        }
+
+        const previousVisibleStart = renderData.visibleSegmentStart;
+        const previousVisibleEnd = renderData.visibleSegmentCount;
+
+        if (previousVisibleEnd > previousVisibleStart) {
+          const hideBeforeIndex = Math.min(previousVisibleEnd, nextVisibleStart);
+
+          for (let index = previousVisibleStart; index < hideBeforeIndex; index += 1) {
+            renderData.segmentEntities[index].show = false;
+          }
+
+          const hideFromIndex = Math.max(previousVisibleStart, nextVisibleEnd);
+
+          for (let index = hideFromIndex; index < previousVisibleEnd; index += 1) {
             renderData.segmentEntities[index].show = false;
           }
         }
 
-        for (let index = renderData.visibleSegmentCount; index < nextVisibleCount; index += 1) {
-          renderData.segmentEntities[index].show = true;
+        for (let index = nextVisibleStart; index < nextVisibleEnd; index += 1) {
+          if (index < previousVisibleStart || index >= previousVisibleEnd) {
+            renderData.segmentEntities[index].show = true;
+          }
         }
 
-        renderData.visibleSegmentCount = nextVisibleCount;
+        renderData.visibleSegmentStart = nextVisibleStart;
+        renderData.visibleSegmentCount = nextVisibleEnd;
         renderData.marker.show = true;
         renderData.label.show = true;
         renderData.beam.show = true;
@@ -567,6 +598,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "actu
         set isFollowed(value: boolean) {
           beamIsFollowed = value;
         },
+        visibleSegmentStart: 0,
         visibleSegmentCount: 0,
       };
     },
@@ -658,6 +690,11 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "actu
   useEffect(() => {
     speedRef.current = speed;
   }, [speed]);
+
+  useEffect(() => {
+    trailMinRef.current = trailMin;
+    updateFlightEntities(elapsedRef.current);
+  }, [trailMin, updateFlightEntities]);
 
   useEffect(() => {
     isPlayingRef.current = isPlaying;
@@ -983,12 +1020,14 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "actu
             durationMs={timelineDuration}
             isPlaying={isPlaying}
             speed={speed}
+            trailOption={trailMin}
             showNames={showNames}
             showAltitudes={showAltitudes}
             onPlayPause={handlePlayPause}
             onReset={handleReset}
             onSeek={handleSeek}
             onSpeedChange={setSpeed}
+            onTrailChange={setTrailMin}
             onShowNames={setShowNames}
             onShowAltitudes={setShowAltitudes}
           />

@@ -4,6 +4,15 @@ import { formatDuration } from "@/lib/flightMath";
 
 const SPEEDS = [1, 5, 10, 20, 50, 100, 200];
 
+export const TRAIL_DURATION_OPTIONS = [
+  { label: "1 min", value: 1 },
+  { label: "5 min", value: 5 },
+  { label: "10 min", value: 10 },
+  { label: "15 min", value: 15 },
+  { label: "30 min", value: 30 },
+  { label: "Full flight", value: Number.POSITIVE_INFINITY },
+] as const;
+
 type PlaybackControlsProps = {
   currentMs: number;
   currentTimestamp: number | null;
@@ -12,12 +21,14 @@ type PlaybackControlsProps = {
   speed: number;
   showNames: boolean;
   showAltitudes: boolean;
+  trailOption: number;
   onPlayPause: () => void;
   onReset: () => void;
   onSeek: (elapsedMs: number) => void;
   onSpeedChange: (speed: number) => void;
   onShowNames: (enabled: boolean) => void;
   onShowAltitudes: (enabled: boolean) => void;
+  onTrailChange: (option: number) => void;
 };
 
 export function PlaybackControls({
@@ -28,12 +39,14 @@ export function PlaybackControls({
   speed,
   showNames,
   showAltitudes,
+  trailOption,
   onPlayPause,
   onReset,
   onSeek,
   onSpeedChange,
   onShowNames,
   onShowAltitudes,
+  onTrailChange,
 }: PlaybackControlsProps) {
   const localTime = currentTimestamp
     ? new Date(currentTimestamp).toLocaleTimeString([], {
@@ -62,6 +75,16 @@ export function PlaybackControls({
             <input type="checkbox" checked={showAltitudes} onChange={() => onShowAltitudes(!showAltitudes)} />
             Show Altitudes
           </label>
+        </div>
+        <div className="trail-options">
+          <div className="label">
+          Trail:
+          </div>
+          <select name="trail-options" value={trailOption} onChange={(event: React.ChangeEvent<HTMLSelectElement>) => onTrailChange(Number(event.target.value))}>
+            {TRAIL_DURATION_OPTIONS.map((option) => {
+              return <option key={option.value} value={option.value}>{option.label}</option>
+            })}
+          </select>
         </div>
         <span>
           {formatDuration(currentMs)} / {formatDuration(durationMs)}
