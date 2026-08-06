@@ -109,6 +109,7 @@ button {
 }
 
 .app-logo-ring,
+.app-logo-reference-line,
 .app-logo-track {
   fill: none;
   stroke-linecap: round;
@@ -130,6 +131,11 @@ button {
 .app-logo-track {
   stroke: var(--accent);
   stroke-width: 10;
+}
+
+.app-logo-reference-line {
+  stroke: var(--accent);
+  stroke-width: 5;
 }
 
 .intro-panel h1 {
