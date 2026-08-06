@@ -179,6 +179,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
   const [currentPoint, setCurrentPoint] = useState<FlightPoint | null>(null);
   const [currentAgl, setCurrentAgl] = useState<number | null>(null);
   const [verticalSpeed, setVerticalSpeed] = useState(0);
+  const [showLabels, setShowLabels] = useState(true);
 
   const followedFlight = flights.find((entry) => entry.id === followedFlightId) ?? flights[0] ?? null;
   const timelineStart = syncMode === "actual" && flights.length > 0 ? Math.min(...flights.map((entry) => entry.flight.startTime)) : 0;
@@ -350,7 +351,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
 
         renderData.visibleSegmentCount = nextVisibleCount;
         renderData.marker.show = true;
-        renderData.label.show = true;
+        renderData.label.show = showLabels;
         renderData.beam.show = true;
         renderData.groundTarget.show = isFollowed;
         renderData.activeSegment.show = true;
@@ -406,7 +407,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         }
       }
     },
-    [altitudeColor, flights, getCurrentFlightPosition, updateCamera],
+    [altitudeColor, flights, getCurrentFlightPosition, updateCamera, showLabels],
   );
 
   const createFlightEntities = useCallback(
@@ -461,7 +462,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         label: {
           text: new Cesium.CallbackProperty(() => labelText, false),
           font: "bold 15px sans-serif",
-          fillColor: Cesium.Color.WHITE,
+          fillColor: Cesium.Color.fromCssColorString(comparedFlight.color),
           style: Cesium.LabelStyle.FILL,
           showBackground: false,
           pixelOffset: new Cesium.Cartesian2(0, -22),
@@ -971,10 +972,12 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
             currentTimestamp={currentPoint?.timestamp ?? null}
             durationMs={timelineDuration}
             isPlaying={isPlaying}
+            showLabels={showLabels}
             speed={speed}
             onPlayPause={handlePlayPause}
             onReset={handleReset}
             onSeek={handleSeek}
+            onShowLabelsChange={setShowLabels}
             onSpeedChange={setSpeed}
           />
         </div>

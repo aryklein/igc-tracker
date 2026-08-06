@@ -6,7 +6,18 @@ import { CesiumFlightViewer } from "./CesiumFlightViewer";
 import { FileUpload } from "./FileUpload";
 import type { ComparedFlight, FlightSyncMode, ParsedFlight } from "@/types/flight";
 
-const COMPARISON_COLORS = ["#00d9ff", "#ff6b4a", "#a6e22e", "#b88cff", "#ffd166"];
+const COMPARISON_COLORS = [
+  "#00d9ff",
+  "#ff6b4a",
+  "#a6e22e",
+  "#b88cff",
+  "#ffd166",
+  "#ff4fa3",
+  "#2dd4bf",
+  "#f97316",
+  "#4d7cff",
+  "#ef4444",
+];
 
 type FlightAppProps = {
   initialFlight?: ParsedFlight | null;
