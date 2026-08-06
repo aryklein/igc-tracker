@@ -20,3 +20,12 @@ export type ParsedFlight = {
   minAltitude: number;
   maxAltitude: number;
 };
+
+export type ComparedFlight = {
+  id: string;
+  flight: ParsedFlight;
+  sourceText: string | null;
+  color: string;
+};
+
+export type FlightSyncMode = "launch" | "actual";

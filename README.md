@@ -4,7 +4,10 @@
 
 ## Features
 
-- Upload an `.igc` file directly in the browser.
+- Upload `.igc` files directly in the browser.
+- Compare up to five flights at once with distinct pilot colors.
+- Follow any pilot; switch without restarting playback.
+- Sync comparison markers by launch time or actual flight time.
 - Parse IGC `B` fixes locally; no backend upload is required.
 - Replay the flight progressively with a follow camera.
 - Autoplay loaded flights at `8x` speed.
@@ -72,13 +75,14 @@ This also runs automatically after `npm install`. The generated `public/cesium/`
 
 ```text
 src/app/page.tsx                    App entry, renders FlightApp
-src/components/FlightApp.tsx         Owns loaded flight state
-src/components/FileUpload.tsx        Reads and parses local IGC files
-src/components/CesiumFlightViewer.tsx 3D replay, camera, track, marker, terrain projection
+src/components/FlightApp.tsx         Owns loaded flights and primary selection
+src/components/FileUpload.tsx        Reads, parses, and lists IGC files; sync controls
+src/components/CesiumFlightViewer.tsx 3D replay, camera, tracks, markers, terrain projection
 src/components/PlaybackControls.tsx  Play, reset, speed, and seek controls
 src/lib/igcParser.ts                 IGC parser and flight stats
 src/lib/flightMath.ts                Distance and formatting helpers
-src/types/flight.ts                  Flight data types
+src/lib/sharedFlights.ts             Share link helpers and expiration logic
+src/types/flight.ts                  Flight data and comparison types
 ```
 
 Implementation notes for the Cesium replay, terrain sampling, progressive track drawing, and projection beam live in `docs/viewer-rendering.md`.

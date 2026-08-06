@@ -134,6 +134,12 @@ button {
   font-size: 1.15rem;
 }
 
+.upload-target span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 .file-input {
   position: absolute;
   width: 1px;
@@ -155,6 +161,130 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.05);
+}
+
+.comparison-flights {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.comparison-flights-heading {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 2px;
+}
+
+.comparison-flights-heading span {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.comparison-flights-heading small {
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.sync-mode {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 4px;
+  border: 0;
+}
+
+.sync-mode legend {
+  margin-right: 2px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sync-mode button {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 6px 8px;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.15);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.sync-mode button.active {
+  border-color: rgba(0, 217, 255, 0.55);
+  color: #ffffff;
+  background: rgba(0, 217, 255, 0.16);
+}
+
+.comparison-flight {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+.comparison-flight > button:first-child {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: var(--foreground);
+  background: rgba(0, 0, 0, 0.15);
+  text-align: left;
+}
+
+.comparison-flight.active > button:first-child {
+  border-color: rgba(0, 217, 255, 0.55);
+  background: rgba(0, 217, 255, 0.1);
+}
+
+.comparison-flight i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.14);
+}
+
+.comparison-flight span {
+  overflow: hidden;
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comparison-flight small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.comparison-remove {
+  width: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.15);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.comparison-remove:hover {
+  color: #ffffff;
+  border-color: rgba(255, 107, 74, 0.7);
+  background: rgba(255, 107, 74, 0.15);
 }
 
 .flight-summary span {
