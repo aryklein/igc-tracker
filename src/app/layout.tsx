@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { JetBrains_Mono, Plus_Jakarta_Sans, Righteous } from "next/font/google";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import "./globals.css";
 
@@ -13,6 +13,12 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+const righteous = Righteous({
+  variable: "--font-brand",
+  subsets: ["latin"],
+  weight: "400",
+});
+
 export const metadata: Metadata = {
   title: "vuel.in",
   description: "3D flight replay for paraglider tracks",
@@ -24,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${jakartaSans.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className={`${jakartaSans.variable} ${jetbrainsMono.variable} ${righteous.variable}`}>
       <body>{children}</body>
     </html>
   );
