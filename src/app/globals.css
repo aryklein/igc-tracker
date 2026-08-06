@@ -94,12 +94,12 @@ button {
 
 .brand-wordmark {
   color: var(--accent);
-  font-family: var(--font-mono), monospace;
-  font-size: clamp(1.5rem, 5vw, 2.25rem);
-  font-weight: 800;
-  letter-spacing: -0.08em;
-  line-height: 0.9;
-  text-shadow: 0 0 28px rgba(255, 122, 26, 0.3);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-size: clamp(1.65rem, 5vw, 2.45rem);
+  font-weight: 900;
+  letter-spacing: -0.11em;
+  line-height: 0.86;
+  text-shadow: 0 0 30px rgba(255, 122, 26, 0.34);
 }
 
 .app-logo {

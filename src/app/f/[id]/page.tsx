@@ -47,7 +47,7 @@ function SharedFlightMessage({ title, children }: { title: string; children: Rea
       <section>
         <div className="brand-lockup">
           <AppLogo />
-          <p className="brand-wordmark">VUEL.in</p>
+          <p className="brand-wordmark">vuel.in</p>
         </div>
         <h1>{title}</h1>
         <p>{children}</p>

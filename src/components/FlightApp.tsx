@@ -53,7 +53,7 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
         <div>
           <div className="brand-lockup">
             <AppLogo />
-            <p className="brand-wordmark">VUEL.in</p>
+            <p className="brand-wordmark">vuel.in</p>
           </div>
           <h1>Replay your paraglider flight in 3D.</h1>
         </div>
