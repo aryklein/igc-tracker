@@ -109,6 +109,8 @@ button {
 }
 
 .app-logo-ring,
+.app-logo-brake-handle,
+.app-logo-pilot-arm,
 .app-logo-reference-line,
 .app-logo-track {
   fill: none;
@@ -136,6 +138,19 @@ button {
 .app-logo-reference-line {
   stroke: var(--foreground);
   stroke-width: 4;
+}
+
+.app-logo-pilot-arm,
+.app-logo-brake-handle {
+  stroke: var(--foreground);
+}
+
+.app-logo-pilot-arm {
+  stroke-width: 7;
+}
+
+.app-logo-brake-handle {
+  stroke-width: 6;
 }
 
 .intro-panel h1 {
