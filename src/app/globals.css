@@ -88,17 +88,22 @@ button {
 .brand-lockup {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 18px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
-.brand-lockup .eyebrow {
+.brand-wordmark {
   color: var(--accent);
-  margin-bottom: 0;
+  font-family: var(--font-mono), monospace;
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.08em;
+  line-height: 0.9;
+  text-shadow: 0 0 28px rgba(255, 122, 26, 0.3);
 }
 
 .app-logo {
-  width: 64px;
+  width: clamp(88px, 9vw, 112px);
   height: auto;
   flex: 0 0 auto;
 }
@@ -144,9 +149,9 @@ button {
 }
 
 .intro-panel h1 {
-  font-size: clamp(2.1rem, 5vw, 4.3rem);
-  letter-spacing: -0.08em;
-  line-height: 0.92;
+  font-size: clamp(1.7rem, 3.4vw, 2.8rem);
+  letter-spacing: -0.06em;
+  line-height: 1;
   margin-bottom: 22px;
 }
 
