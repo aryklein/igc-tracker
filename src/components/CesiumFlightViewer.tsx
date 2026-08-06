@@ -375,10 +375,16 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "actu
           }
         }
 
-        for (let index = nextVisibleStart; index < nextVisibleEnd; index += 1) {
-          if (index < previousVisibleStart || index >= previousVisibleEnd) {
-            renderData.segmentEntities[index].show = true;
-          }
+        const showBeforeIndex = Math.min(nextVisibleEnd, previousVisibleStart);
+
+        for (let index = nextVisibleStart; index < showBeforeIndex; index += 1) {
+          renderData.segmentEntities[index].show = true;
+        }
+
+        const showFromIndex = Math.max(nextVisibleStart, previousVisibleEnd);
+
+        for (let index = showFromIndex; index < nextVisibleEnd; index += 1) {
+          renderData.segmentEntities[index].show = true;
         }
 
         renderData.visibleSegmentStart = nextVisibleStart;
