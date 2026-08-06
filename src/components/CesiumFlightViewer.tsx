@@ -460,10 +460,10 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         position: new Cesium.CallbackPositionProperty(() => labelPosition, false),
         label: {
           text: new Cesium.CallbackProperty(() => labelText, false),
-          font: "600 13px ui-sans-serif, system-ui, sans-serif",
+          font: "bold 15px sans-serif",
           fillColor: Cesium.Color.WHITE,
           outlineColor: Cesium.Color.fromCssColorString("#0a0a0a"),
-          outlineWidth: 2,
+          outlineWidth: 1,
           style: Cesium.LabelStyle.FILL_AND_OUTLINE,
           showBackground: false,
           pixelOffset: new Cesium.Cartesian2(0, -22),
