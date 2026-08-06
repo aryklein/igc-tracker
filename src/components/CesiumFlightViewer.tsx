@@ -157,7 +157,7 @@ function getFlightElapsedMs(flight: ParsedFlight, timelineMs: number, syncMode: 
   return timelineStart + timelineMs - flight.startTime;
 }
 
-export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "launch" }: CesiumFlightViewerProps) {
+export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "actual" }: CesiumFlightViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cesiumRef = useRef<CesiumModule | null>(null);
   const viewerRef = useRef<Viewer | null>(null);
@@ -179,6 +179,9 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
   const [currentPoint, setCurrentPoint] = useState<FlightPoint | null>(null);
   const [currentAgl, setCurrentAgl] = useState<number | null>(null);
   const [verticalSpeed, setVerticalSpeed] = useState(0);
+
+  const [showNames, setShowNames] = useState(true);
+  const [showAltitudes, setShowAltitudes] = useState(true);
 
   const followedFlight = flights.find((entry) => entry.id === followedFlightId) ?? flights[0] ?? null;
   const timelineStart = syncMode === "actual" && flights.length > 0 ? Math.min(...flights.map((entry) => entry.flight.startTime)) : 0;
@@ -354,6 +357,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         renderData.beam.show = true;
         renderData.groundTarget.show = isFollowed;
         renderData.activeSegment.show = true;
+        renderData.label.show = showNames || showAltitudes;
 
         renderData.activeSegmentColor =
           flights.length === 1
@@ -388,7 +392,10 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
 
         renderData.marker.position = new Cesium.ConstantPositionProperty(result.position);
         renderData.labelPosition = result.position;
-        renderData.labelText = `${renderData.flight.flight.pilotName ?? renderData.flight.flight.filename}\n${Math.round(result.current.point.altitude)} m`;
+        renderData.labelText = '';
+        renderData.labelText += showNames ? `${renderData.flight.flight.pilotName ?? renderData.flight.flight.filename}` : '';
+        renderData.labelText += showNames && showAltitudes ? '\n' : '';
+        renderData.labelText += showAltitudes ? `${Math.round(result.current.point.altitude)}m` : '';
         renderData.beamPositions.splice(0, renderData.beamPositions.length, groundPosition, result.position);
         renderData.groundTargetPosition = groundPosition;
         renderData.activeSegmentPositions.splice(
@@ -406,8 +413,10 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         }
       }
     },
-    [altitudeColor, flights, getCurrentFlightPosition, updateCamera],
+    [altitudeColor, flights, getCurrentFlightPosition, updateCamera, showAltitudes, showNames],
   );
+
+
 
   const createFlightEntities = useCallback(
     async (Cesium: CesiumModule, viewer: Viewer, comparedFlight: ComparedFlight, isCancelled: () => boolean) => {
@@ -447,7 +456,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         name: `${comparedFlight.flight.pilotName ?? comparedFlight.flight.filename} marker`,
         point: {
           color: Cesium.Color.fromCssColorString(comparedFlight.color),
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          //disableDepthTestDistance: Number.POSITIVE_INFINITY,
           outlineColor: Cesium.Color.WHITE,
           outlineWidth: 2,
           pixelSize: 10,
@@ -460,15 +469,17 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         position: new Cesium.CallbackPositionProperty(() => labelPosition, false),
         label: {
           text: new Cesium.CallbackProperty(() => labelText, false),
-          font: "bold 15px sans-serif",
-          fillColor: Cesium.Color.WHITE,
-          style: Cesium.LabelStyle.FILL,
+          font: 'bold 17px sans-serif',
+          fillColor: Cesium.Color.fromCssColorString(comparedFlight.color),
+          outlineColor: Cesium.Color.BLACK,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
           showBackground: false,
+          backgroundColor: Cesium.Color.BLACK.withAlpha(0.2),
           pixelOffset: new Cesium.Cartesian2(0, -22),
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          scaleByDistance: new Cesium.NearFarScalar(500, 1, 15_000, 0.55),
-          translucencyByDistance: new Cesium.NearFarScalar(12_000, 1, 25_000, 0),
+          eyeOffset: new Cesium.Cartesian3(0, 0, -5),
+          scaleByDistance: new Cesium.NearFarScalar(500, 1, 25_000, 0.8),
+          translucencyByDistance: new Cesium.NearFarScalar(12_000, 1, 35_000, 0),
         },
       });
       const activeSegmentPositions: Cartesian3[] = [];
@@ -972,10 +983,14 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
             durationMs={timelineDuration}
             isPlaying={isPlaying}
             speed={speed}
+            showNames={showNames}
+            showAltitudes={showAltitudes}
             onPlayPause={handlePlayPause}
             onReset={handleReset}
             onSeek={handleSeek}
             onSpeedChange={setSpeed}
+            onShowNames={setShowNames}
+            onShowAltitudes={setShowAltitudes}
           />
         </div>
       ) : null}

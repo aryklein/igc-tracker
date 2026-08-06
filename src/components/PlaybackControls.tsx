@@ -2,7 +2,7 @@
 
 import { formatDuration } from "@/lib/flightMath";
 
-const SPEEDS = [1, 4, 8, 16, 32];
+const SPEEDS = [1, 5, 10, 20, 50, 100, 200];
 
 type PlaybackControlsProps = {
   currentMs: number;
@@ -10,10 +10,14 @@ type PlaybackControlsProps = {
   durationMs: number;
   isPlaying: boolean;
   speed: number;
+  showNames: boolean;
+  showAltitudes: boolean;
   onPlayPause: () => void;
   onReset: () => void;
   onSeek: (elapsedMs: number) => void;
   onSpeedChange: (speed: number) => void;
+  onShowNames: (enabled: boolean) => void;
+  onShowAltitudes: (enabled: boolean) => void;
 };
 
 export function PlaybackControls({
@@ -22,10 +26,14 @@ export function PlaybackControls({
   durationMs,
   isPlaying,
   speed,
+  showNames,
+  showAltitudes,
   onPlayPause,
   onReset,
   onSeek,
   onSpeedChange,
+  onShowNames,
+  onShowAltitudes,
 }: PlaybackControlsProps) {
   const localTime = currentTimestamp
     ? new Date(currentTimestamp).toLocaleTimeString([], {
@@ -45,6 +53,16 @@ export function PlaybackControls({
         <button aria-label="Reset" className="icon-button" type="button" onClick={onReset}>
           ↺
         </button>
+        <div className="show-labels">
+          <label>
+            <input type="checkbox" checked={showNames} onChange={() => onShowNames(!showNames)} />
+            Show Names
+          </label>
+          <label>
+            <input type="checkbox" checked={showAltitudes} onChange={() => onShowAltitudes(!showAltitudes)} />
+            Show Altitudes
+          </label>
+        </div>
         <span>
           {formatDuration(currentMs)} / {formatDuration(durationMs)}
         </span>
