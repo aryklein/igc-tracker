@@ -44,7 +44,7 @@ function SharedFlightMessage({ title, children }: { title: string; children: Rea
   return (
     <main className="shared-flight-message">
       <section>
-        <p className="eyebrow">IGC Tracker</p>
+        <p className="eyebrow">vuel.in</p>
         <h1>{title}</h1>
         <p>{children}</p>
         <Link href="/">Open the viewer</Link>

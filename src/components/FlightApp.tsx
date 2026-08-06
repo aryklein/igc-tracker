@@ -50,9 +50,8 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
     <main className="app-shell">
       <aside className="intro-panel">
         <div>
-          <p className="eyebrow">IGC Tracker MVP</p>
+          <p className="eyebrow">vuel.in</p>
           <h1>Replay your paraglider flight in 3D.</h1>
-          <p className="intro-copy">A personal project by Ary Kleinerman.</p>
         </div>
         <FileUpload
           allowSharing={allowSharing}

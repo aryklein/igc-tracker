@@ -1,6 +1,6 @@
-# IGC Tracker
+# vuel.in
 
-3D IGC flight replay viewer for paraglider tracks with Cesium terrain, satellite imagery, altitude-colored trails, and playback controls.
+3D flight replay viewer for paraglider tracks with Cesium terrain, satellite imagery, altitude-colored trails, and playback controls.
 
 ## Features
 

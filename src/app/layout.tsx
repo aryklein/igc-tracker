@@ -14,8 +14,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IGC Tracker",
-  description: "3D IGC flight replay for paraglider tracks",
+  title: "vuel.in",
+  description: "3D flight replay for paraglider tracks",
 };
 
 export default function RootLayout({
