@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AppLogo } from "./AppLogo";
 import { CesiumFlightViewer } from "./CesiumFlightViewer";
 import { FileUpload } from "./FileUpload";
 import type { ComparedFlight, FlightSyncMode, ParsedFlight } from "@/types/flight";
@@ -50,7 +51,10 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
     <main className="app-shell">
       <aside className="intro-panel">
         <div>
-          <p className="eyebrow">vuel.in</p>
+          <div className="brand-lockup">
+            <AppLogo />
+            <p className="eyebrow">vuel.in</p>
+          </div>
           <h1>Replay your paraglider flight in 3D.</h1>
         </div>
         <FileUpload

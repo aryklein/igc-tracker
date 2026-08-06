@@ -85,6 +85,45 @@ button {
   text-transform: uppercase;
 }
 
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.brand-lockup .eyebrow {
+  color: var(--accent);
+  margin-bottom: 0;
+}
+
+.app-logo {
+  width: 58px;
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.app-logo-wing,
+.app-logo-pilot {
+  fill: var(--foreground);
+}
+
+.app-logo-line,
+.app-logo-track {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.app-logo-line {
+  stroke-width: 3;
+}
+
+.app-logo-track {
+  stroke-width: 4;
+}
+
 .intro-panel h1 {
   font-size: clamp(2.1rem, 5vw, 4.3rem);
   letter-spacing: -0.08em;

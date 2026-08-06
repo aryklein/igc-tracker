@@ -1,5 +1,6 @@
 import { get } from "@vercel/blob";
 import Link from "next/link";
+import { AppLogo } from "@/components/AppLogo";
 import { FlightApp } from "@/components/FlightApp";
 import { getBlobOptions } from "@/lib/blobConfig";
 import { parseIgcFile } from "@/lib/igcParser";
@@ -44,7 +45,10 @@ function SharedFlightMessage({ title, children }: { title: string; children: Rea
   return (
     <main className="shared-flight-message">
       <section>
-        <p className="eyebrow">vuel.in</p>
+        <div className="brand-lockup">
+          <AppLogo />
+          <p className="eyebrow">vuel.in</p>
+        </div>
         <h1>{title}</h1>
         <p>{children}</p>
         <Link href="/">Open the viewer</Link>
