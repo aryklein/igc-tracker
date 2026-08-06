@@ -94,11 +94,11 @@ button {
 
 .brand-wordmark {
   color: var(--accent);
-  font-family: var(--font-brand), var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   font-size: clamp(1.9rem, 5vw, 2.8rem);
-  font-weight: 400;
-  letter-spacing: -0.05em;
-  line-height: 0.82;
+  font-weight: 500;
+  letter-spacing: -0.09em;
+  line-height: 0.9;
   text-shadow: 0 0 30px rgba(255, 122, 26, 0.3);
 }
 
@@ -111,8 +111,10 @@ button {
 .app-logo-ring,
 .app-logo-canopy-cut,
 .app-logo-harness,
-.app-logo-leg,
 .app-logo-line,
+.app-logo-pilot-arm,
+.app-logo-pilot-foot,
+.app-logo-pilot-leg,
 .app-logo-rib,
 .app-logo-track {
   fill: none;
@@ -121,14 +123,17 @@ button {
 }
 
 .app-logo-canopy,
-.app-logo-pilot {
+.app-logo-pilot-body,
+.app-logo-pilot-head {
   fill: var(--foreground);
 }
 
 .app-logo-ring,
 .app-logo-harness,
-.app-logo-leg,
-.app-logo-line {
+.app-logo-line,
+.app-logo-pilot-arm,
+.app-logo-pilot-foot,
+.app-logo-pilot-leg {
   stroke: var(--foreground);
 }
 
@@ -148,9 +153,17 @@ button {
 
 .app-logo-canopy-cut,
 .app-logo-harness,
-.app-logo-leg,
+.app-logo-pilot-arm,
+.app-logo-pilot-foot,
+.app-logo-pilot-leg,
 .app-logo-rib {
   stroke-width: 2;
+}
+
+.app-logo-pilot-arm,
+.app-logo-pilot-foot,
+.app-logo-pilot-leg {
+  stroke-width: 4;
 }
 
 .app-logo-track {

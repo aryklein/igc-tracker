@@ -12,10 +12,15 @@ export function AppLogo() {
       <path className="app-logo-line" d="M79 51L80 108" />
       <path className="app-logo-line" d="M111 50L87 109" />
       <path className="app-logo-line" d="M130 61L91 111" />
-      <path className="app-logo-harness" d="M72 111C74 119 86 120 91 111" />
-      <circle className="app-logo-pilot" cx="81" cy="111" r="7" />
-      <path className="app-logo-pilot" d="M69 126C70 116 85 112 96 124L105 139L99 143L88 132L78 136C72 138 68 134 69 126Z" />
-      <path className="app-logo-leg" d="M93 132L113 136" />
+      <path className="app-logo-harness" d="M70 110C73 120 87 121 94 111" />
+      <circle className="app-logo-pilot-head" cx="82" cy="110" r="6" />
+      <path className="app-logo-pilot-body" d="M75 118C81 114 91 117 96 126L89 133C82 131 76 126 75 118Z" />
+      <path className="app-logo-pilot-arm" d="M76 119C71 123 69 128 70 134" />
+      <path className="app-logo-pilot-arm" d="M93 121C99 116 100 109 99 103" />
+      <path className="app-logo-pilot-leg" d="M89 132L100 144" />
+      <path className="app-logo-pilot-leg" d="M96 128L113 135" />
+      <path className="app-logo-pilot-foot" d="M100 144L108 141" />
+      <path className="app-logo-pilot-foot" d="M113 135L119 131" />
       <path className="app-logo-track" d="M28 101C39 115 54 127 73 137" />
     </svg>
   );
