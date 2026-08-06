@@ -63,18 +63,47 @@ button {
   gap: 18px;
 }
 
-.intro-panel {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  gap: 28px;
-  padding: 28px;
+.intro-panel-wrapper {
   border: 1px solid var(--panel-border);
   border-radius: 28px;
   background: var(--panel);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(22px);
+  padding: 10px;
 }
+
+.intro-panel {
+  display: flex;
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 28px;
+  padding: 15px;
+
+  scrollbar-width: thin; /* Firefox fallback, see below */
+  scrollbar-color: #3a4a63 #0f1729; /* Firefox: thumb track */
+}
+
+.intro-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.intro-panel::-webkit-scrollbar-track {
+  background: #0f1729; /* matches the dark navy panel background */
+  border-radius: 4px;
+}
+
+.intro-panel::-webkit-scrollbar-thumb {
+  background: #3a4a63; /* muted slate-blue, sits quietly against the navy */
+  border-radius: 4px;
+  border: 1px solid #0f1729; /* creates a subtle inset/padding effect */
+}
+
+.intro-panel::-webkit-scrollbar-thumb:hover {
+  background: #5a708f; /* lighter on hover for feedback */
+}
+
 
 .eyebrow {
   color: var(--accent);
@@ -270,6 +299,7 @@ button {
   background: rgba(0, 0, 0, 0.15);
   font-size: 0.72rem;
   font-weight: 800;
+  margin-top: 5px;
 }
 
 .sync-mode button.active {

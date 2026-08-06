@@ -65,25 +65,27 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
 
   return (
     <main className="app-shell">
-      <aside className="intro-panel">
-        <div>
-          <div className="brand-lockup">
-            <AppLogo />
-            <p className="brand-wordmark">vuel.in</p>
+      <div className="intro-panel-wrapper">
+        <aside className="intro-panel">
+          <div>
+            <div className="brand-lockup">
+              <AppLogo />
+              <p className="brand-wordmark">vuel.in</p>
+            </div>
+            <h1>Replay your paraglider flight in 3D.</h1>
           </div>
-          <h1>Replay your paraglider flight in 3D.</h1>
-        </div>
-        <FileUpload
-          allowSharing={allowSharing}
-          flights={flights}
-          primaryFlightId={primaryFlight?.id ?? null}
-          onFlightRemoved={handleFlightRemoved}
-          onFlightsLoaded={handleFlightsLoaded}
-          onPrimaryFlightChange={setPrimaryFlightId}
-          onSyncModeChange={setSyncMode}
-          syncMode={syncMode}
-        />
-      </aside>
+          <FileUpload
+            allowSharing={allowSharing}
+            flights={flights}
+            primaryFlightId={primaryFlight?.id ?? null}
+            onFlightRemoved={handleFlightRemoved}
+            onFlightsLoaded={handleFlightsLoaded}
+            onPrimaryFlightChange={setPrimaryFlightId}
+            onSyncModeChange={setSyncMode}
+            syncMode={syncMode}
+          />
+        </aside>
+      </div>
       <CesiumFlightViewer
         flights={flights}
         followedFlightId={primaryFlight?.id ?? null}
