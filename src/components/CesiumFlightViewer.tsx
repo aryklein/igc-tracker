@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { formatProgressTime, verticalSpeedAtElapsed } from "@/lib/flightMath";
 import type { ComparedFlight, FlightPoint, FlightSyncMode, ParsedFlight } from "@/types/flight";
 import { PlaybackControls } from "./PlaybackControls";
 
@@ -44,8 +45,6 @@ type FlightRenderData = {
 };
 
 const VISUAL_TERRAIN_CLEARANCE_METERS = 8;
-const VARIO_WINDOW_MS = 10_000;
-
 declare global {
   interface Window {
     CESIUM_BASE_URL?: string;
@@ -117,15 +116,6 @@ function findPointAtElapsed(points: FlightPoint[], elapsedMs: number): Interpola
     },
     index: low,
   };
-}
-
-function verticalSpeedAtElapsed(points: FlightPoint[], elapsedMs: number) {
-  const windowStart = Math.max(0, elapsedMs - VARIO_WINDOW_MS);
-  const from = findPointAtElapsed(points, windowStart).point;
-  const to = findPointAtElapsed(points, elapsedMs).point;
-  const elapsedSeconds = Math.max(1, (to.elapsedMs - from.elapsedMs) / 1000);
-
-  return (to.altitude - from.altitude) / elapsedSeconds;
 }
 
 function interpolateRenderPosition(
@@ -473,7 +463,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
           updateCamera(result.position);
           setCurrentPoint(result.current.point);
           setCurrentAgl(Math.max(0, result.current.point.altitude - groundHeight));
-          setVerticalSpeed(verticalSpeedAtElapsed(renderData.flight.flight.points, result.flightElapsed));
+          setVerticalSpeed(verticalSpeedAtElapsed(renderData.flight.flight.points, result.current.point.elapsedMs));
         }
       }
     },
@@ -1036,6 +1026,22 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
               </div>
               <em className={verticalSpeed >= 0 ? "climb" : "sink"}>{verticalSpeed.toFixed(1)} m/s</em>
             </div>
+            <dl className="vario-peaks">
+              <div>
+                <dt>Max lift</dt>
+                <dd className="lift">
+                  {followedFlight.flight.maxLift ? `+${followedFlight.flight.maxLift.value.toFixed(1)} m/s` : "--"}
+                  {followedFlight.flight.maxLift ? <time>at {formatProgressTime(followedFlight.flight.maxLift.elapsedMs)}</time> : null}
+                </dd>
+              </div>
+              <div>
+                <dt>Max sink</dt>
+                <dd className="sink">
+                  {followedFlight.flight.maxSink ? `${followedFlight.flight.maxSink.value.toFixed(1)} m/s` : "--"}
+                  {followedFlight.flight.maxSink ? <time>at {formatProgressTime(followedFlight.flight.maxSink.elapsedMs)}</time> : null}
+                </dd>
+              </div>
+            </dl>
           </div>
           <PlaybackControls
             currentMs={currentMs}
