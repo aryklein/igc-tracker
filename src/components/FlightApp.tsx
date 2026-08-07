@@ -35,6 +35,7 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
   const [syncMode, setSyncMode] = useState<FlightSyncMode>("launch");
   const collapseButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileCollapseButtonRef = useRef<HTMLButtonElement>(null);
   const restoreButtonRef = useRef<HTMLButtonElement>(null);
   const primaryFlight = flights.find((entry) => entry.id === primaryFlightId) ?? flights[0] ?? null;
 
@@ -79,11 +80,36 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
         title="Show panel"
         onClick={() => {
           setIsPanelCollapsed(false);
-          requestAnimationFrame(() => collapseButtonRef.current?.focus());
+          requestAnimationFrame(() => {
+            const collapseButton = window.matchMedia("(max-width: 880px)").matches
+              ? mobileCollapseButtonRef.current
+              : collapseButtonRef.current;
+
+            collapseButton?.focus();
+          });
         }}
       >
         <svg aria-hidden="true" viewBox="0 0 24 24">
           <path d="m9 18 6-6-6-6" />
+        </svg>
+      </button>
+      <button
+        ref={mobileCollapseButtonRef}
+        className="panel-collapse-mobile"
+        type="button"
+        aria-controls="flight-panel"
+        aria-hidden={isPanelCollapsed}
+        aria-expanded={!isPanelCollapsed}
+        tabIndex={isPanelCollapsed ? -1 : 0}
+        aria-label="Hide panel"
+        title="Hide panel"
+        onClick={() => {
+          setIsPanelCollapsed(true);
+          requestAnimationFrame(() => restoreButtonRef.current?.focus());
+        }}
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="m15 18-6-6 6-6" />
         </svg>
       </button>
       <aside id="flight-panel" className="intro-panel" aria-hidden={isPanelCollapsed} inert={isPanelCollapsed}>
