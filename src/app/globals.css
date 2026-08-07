@@ -791,6 +791,13 @@ button {
   }
 }
 
+@media (pointer: coarse) {
+  .panel-collapse,
+  .panel-restore {
+    display: none;
+  }
+}
+
 @media (max-width: 560px) {
   .app-shell {
     padding: 10px;
