@@ -56,12 +56,55 @@ button {
 }
 
 .app-shell {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(300px, 390px) 1fr;
   height: 100vh;
   min-height: 100vh;
   padding: 18px;
   gap: 18px;
+}
+
+.app-shell.panel-collapsed {
+  grid-template-columns: 1fr;
+}
+
+.app-shell.panel-collapsed .intro-panel {
+  display: none;
+}
+
+.panel-collapse,
+.panel-restore {
+  width: fit-content;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--foreground);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  backdrop-filter: blur(14px);
+}
+
+.panel-collapse:hover,
+.panel-restore:hover {
+  border-color: rgba(255, 122, 26, 0.8);
+  background: rgba(255, 122, 26, 0.16);
+}
+
+.panel-collapse {
+  align-self: flex-end;
+  margin-bottom: -14px;
+}
+
+.panel-restore {
+  position: absolute;
+  z-index: 10;
+  top: 30px;
+  left: 30px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
 }
 
 .intro-panel {
@@ -703,6 +746,19 @@ button {
   .app-shell {
     height: auto;
     grid-template-columns: 1fr;
+  }
+
+  .app-shell.panel-collapsed {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell.panel-collapsed .intro-panel {
+    display: flex;
+  }
+
+  .panel-collapse,
+  .panel-restore {
+    display: none;
   }
 
   .intro-panel {
