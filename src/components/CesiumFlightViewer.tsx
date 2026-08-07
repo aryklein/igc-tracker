@@ -14,6 +14,7 @@ type TerrainProvider = import("cesium").TerrainProvider;
 type CesiumFlightViewerProps = {
   flights: ComparedFlight[];
   followedFlightId: string | null;
+  isPanelCollapsed: boolean;
   syncMode?: FlightSyncMode;
 };
 
@@ -157,8 +158,9 @@ function getFlightElapsedMs(flight: ParsedFlight, timelineMs: number, syncMode: 
   return timelineStart + timelineMs - flight.startTime;
 }
 
-export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "launch" }: CesiumFlightViewerProps) {
+export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed, syncMode = "launch" }: CesiumFlightViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const viewerShellRef = useRef<HTMLElement | null>(null);
   const cesiumRef = useRef<CesiumModule | null>(null);
   const viewerRef = useRef<Viewer | null>(null);
   const renderDataRef = useRef(new Map<string, FlightRenderData>());
@@ -180,6 +182,44 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
   const [currentAgl, setCurrentAgl] = useState<number | null>(null);
   const [verticalSpeed, setVerticalSpeed] = useState(0);
   const [showLabels, setShowLabels] = useState(true);
+  const [hudElement, setHudElement] = useState<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const viewerShell = viewerShellRef.current;
+
+    if (!viewerShell) {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 880px)");
+    const updateReservedSpace = () => {
+      if (!isPanelCollapsed || !hudElement || !mediaQuery.matches) {
+        viewerShell.style.removeProperty("--fullscreen-hud-reserved");
+        return;
+      }
+
+      const viewerRect = viewerShell.getBoundingClientRect();
+      const hudRect = hudElement.getBoundingClientRect();
+      const reservedSpace = Math.max(0, viewerRect.bottom - hudRect.top);
+      viewerShell.style.setProperty("--fullscreen-hud-reserved", `${Math.ceil(reservedSpace)}px`);
+    };
+    const resizeObserver = new ResizeObserver(updateReservedSpace);
+
+    resizeObserver.observe(viewerShell);
+
+    if (hudElement) {
+      resizeObserver.observe(hudElement);
+    }
+
+    updateReservedSpace();
+    mediaQuery.addEventListener("change", updateReservedSpace);
+
+    return () => {
+      resizeObserver.disconnect();
+      mediaQuery.removeEventListener("change", updateReservedSpace);
+      viewerShell.style.removeProperty("--fullscreen-hud-reserved");
+    };
+  }, [hudElement, isPanelCollapsed]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -972,7 +1012,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
   }
 
   return (
-    <section className="viewer-shell">
+    <section ref={viewerShellRef} className="viewer-shell">
       <div ref={containerRef} className="cesium-container" />
       {flights.length === 0 ? (
         <div className="viewer-empty">
@@ -982,7 +1022,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
       ) : null}
       {loadError ? <div className="viewer-error">{loadError}</div> : null}
       {followedFlight ? (
-        <div className="hud">
+        <div ref={setHudElement} className="hud">
           <div className="flight-card">
             <div className="flight-live-stats">
               <div className="altitude-stack">

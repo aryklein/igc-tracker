@@ -124,6 +124,7 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
       <CesiumFlightViewer
         flights={flights}
         followedFlightId={primaryFlight?.id ?? null}
+        isPanelCollapsed={isPanelCollapsed}
         syncMode={syncMode}
       />
     </main>

@@ -834,6 +834,7 @@ button {
   .app-shell.panel-collapsed .cesium-container {
     position: absolute;
     inset: 0;
+    bottom: var(--fullscreen-hud-reserved, 0px);
     height: auto;
     min-height: 0;
     border-radius: 0;
@@ -841,9 +842,65 @@ button {
 
   .app-shell.panel-collapsed .hud {
     position: absolute;
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
+    left: clamp(8px, 2.5vw, 12px);
+    right: clamp(8px, 2.5vw, 12px);
+    bottom: clamp(8px, 2.5vw, 12px);
+    gap: clamp(6px, 2vw, 10px);
+  }
+
+  .app-shell.panel-collapsed .flight-card {
+    gap: 4px;
+    padding: clamp(8px, 2.5vw, 12px);
+  }
+
+  .app-shell.panel-collapsed .flight-live-stats {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .app-shell.panel-collapsed .flight-card .altitude-value {
+    font-size: clamp(1.35rem, 6vw, 1.85rem);
+  }
+
+  .app-shell.panel-collapsed .flight-card .agl-value {
+    font-size: clamp(0.68rem, 2.8vw, 0.78rem);
+  }
+
+  .app-shell.panel-collapsed .flight-card em {
+    padding: 4px 7px;
+    font-size: clamp(0.72rem, 2.8vw, 0.8rem);
+  }
+
+  .app-shell.panel-collapsed .playback-card {
+    gap: clamp(6px, 2vw, 8px);
+    padding: clamp(8px, 2.5vw, 12px);
+  }
+
+  .app-shell.panel-collapsed .playback-topline,
+  .app-shell.panel-collapsed .speed-list {
+    gap: 6px;
+  }
+
+  .app-shell.panel-collapsed .playback-topline span {
+    width: auto;
+    margin-left: auto;
+    font-size: clamp(0.72rem, 2.8vw, 0.8rem);
+  }
+
+  .app-shell.panel-collapsed .playback-card button:not(.icon-button) {
+    min-height: 36px;
+    padding: 6px 10px;
+    font-size: clamp(0.72rem, 2.8vw, 0.82rem);
+  }
+
+  .app-shell.panel-collapsed .progress-control {
+    gap: 4px;
+  }
+
+  .app-shell.panel-collapsed .progress-heading span,
+  .app-shell.panel-collapsed .progress-heading strong {
+    font-size: clamp(0.66rem, 2.5vw, 0.74rem);
   }
 
   .panel-collapse,
