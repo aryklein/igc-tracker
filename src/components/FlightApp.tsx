@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppLogo } from "./AppLogo";
 import { CesiumFlightViewer } from "./CesiumFlightViewer";
 import { FileUpload } from "./FileUpload";
@@ -34,7 +34,14 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
   const [primaryFlightId, setPrimaryFlightId] = useState<string | null>(initialFlight ? "initial-flight" : null);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
   const [syncMode, setSyncMode] = useState<FlightSyncMode>("launch");
+  const appShellRef = useRef<HTMLElement>(null);
   const primaryFlight = flights.find((entry) => entry.id === primaryFlightId) ?? flights[0] ?? null;
+
+  useEffect(() => {
+    if (isPanelCollapsed) {
+      appShellRef.current?.scrollIntoView({ block: "start" });
+    }
+  }, [isPanelCollapsed]);
 
   function handleFlightsLoaded(nextFlights: Array<{ flight: ParsedFlight; sourceText: string }>) {
     const availableColors = COMPARISON_COLORS.filter((color) => !flights.some((flight) => flight.color === color));
@@ -65,18 +72,31 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
 
   function handlePanelCollapsed() {
     setIsPanelCollapsed(true);
-    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+  }
+
+  function handlePanelRestored() {
+    setIsPanelCollapsed(false);
   }
 
   return (
-    <main className={isPanelCollapsed ? "app-shell panel-collapsed" : "app-shell"}>
+    <main ref={appShellRef} className={isPanelCollapsed ? "app-shell panel-collapsed" : "app-shell"}>
       {isPanelCollapsed ? (
-        <button className="panel-restore" type="button" onClick={() => setIsPanelCollapsed(false)}>
+        <button
+          className="panel-restore"
+          type="button"
+          onClick={handlePanelRestored}
+          onTouchEnd={handlePanelRestored}
+        >
           Show panel
         </button>
       ) : null}
       <aside className="intro-panel">
-        <button className="panel-collapse" type="button" onClick={handlePanelCollapsed}>
+        <button
+          className="panel-collapse"
+          type="button"
+          onClick={handlePanelCollapsed}
+          onTouchEnd={handlePanelCollapsed}
+        >
           Hide panel
         </button>
         <div>
