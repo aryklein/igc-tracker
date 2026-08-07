@@ -82,7 +82,9 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
           requestAnimationFrame(() => collapseButtonRef.current?.focus());
         }}
       >
-        <span aria-hidden="true">→</span>
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="m9 18 6-6-6-6" />
+        </svg>
       </button>
       <aside id="flight-panel" className="intro-panel" aria-hidden={isPanelCollapsed} inert={isPanelCollapsed}>
         <button
@@ -98,7 +100,9 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
             requestAnimationFrame(() => restoreButtonRef.current?.focus());
           }}
         >
-          <span aria-hidden="true">←</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
         </button>
         <div>
           <div className="brand-lockup">

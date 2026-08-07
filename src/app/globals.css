@@ -101,6 +101,17 @@ button {
   background: rgba(255, 122, 26, 0.16);
 }
 
+.panel-collapse svg,
+.panel-restore svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
 .panel-restore {
   opacity: 0;
   pointer-events: none;
