@@ -72,6 +72,7 @@ button {
 }
 
 .panel-collapse,
+.panel-collapse-mobile,
 .panel-restore {
   position: absolute;
   z-index: 10;
@@ -95,13 +96,19 @@ button {
   left: auto;
 }
 
+.panel-collapse-mobile {
+  display: none;
+}
+
 .panel-collapse:hover,
+.panel-collapse-mobile:hover,
 .panel-restore:hover {
   border-color: rgba(255, 122, 26, 0.8);
   background: rgba(255, 122, 26, 0.16);
 }
 
 .panel-collapse svg,
+.panel-collapse-mobile svg,
 .panel-restore svg {
   width: 20px;
   height: 20px;
@@ -903,7 +910,7 @@ button {
     font-size: clamp(0.66rem, 2.5vw, 0.74rem);
   }
 
-  .panel-collapse,
+  .panel-collapse-mobile,
   .panel-restore {
     position: fixed;
     top: max(14px, env(safe-area-inset-top));
@@ -911,8 +918,16 @@ button {
   }
 
   .panel-collapse {
+    display: none;
+  }
+
+  .panel-collapse-mobile {
+    display: inline-grid;
+    place-items: center;
     right: max(14px, env(safe-area-inset-right));
     left: auto;
+    opacity: 1;
+    transition: opacity 180ms ease, transform 180ms ease;
   }
 
   .panel-restore {
@@ -921,8 +936,15 @@ button {
   }
 
   .panel-collapse svg,
+  .panel-collapse-mobile svg,
   .panel-restore svg {
     transform: rotate(90deg);
+  }
+
+  .app-shell.panel-collapsed .panel-collapse-mobile {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-8px);
   }
 }
 
@@ -973,6 +995,7 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .app-shell,
   .intro-panel,
+  .panel-collapse-mobile,
   .panel-restore {
     transition: none;
   }
