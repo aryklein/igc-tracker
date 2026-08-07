@@ -75,12 +75,14 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
         aria-hidden={!isPanelCollapsed}
         aria-expanded={!isPanelCollapsed}
         tabIndex={isPanelCollapsed ? 0 : -1}
+        aria-label="Show panel"
+        title="Show panel"
         onClick={() => {
           setIsPanelCollapsed(false);
           requestAnimationFrame(() => collapseButtonRef.current?.focus());
         }}
       >
-        Show panel
+        <span aria-hidden="true">→</span>
       </button>
       <aside id="flight-panel" className="intro-panel" aria-hidden={isPanelCollapsed} inert={isPanelCollapsed}>
         <button
@@ -89,12 +91,14 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
           type="button"
           aria-controls="flight-panel"
           aria-expanded={!isPanelCollapsed}
+          aria-label="Hide panel"
+          title="Hide panel"
           onClick={() => {
             setIsPanelCollapsed(true);
             requestAnimationFrame(() => restoreButtonRef.current?.focus());
           }}
         >
-          Hide panel
+          <span aria-hidden="true">←</span>
         </button>
         <div>
           <div className="brand-lockup">

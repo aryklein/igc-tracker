@@ -78,17 +78,21 @@ button {
   top: 30px;
   left: 30px;
   min-height: 44px;
-  width: fit-content;
+  min-width: 44px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
-  padding: 8px 12px;
+  padding: 8px;
   color: var(--foreground);
   background: rgba(255, 255, 255, 0.08);
-  font-size: 0.74rem;
+  font-size: 1.35rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  line-height: 1;
   backdrop-filter: blur(14px);
+}
+
+.panel-collapse {
+  right: 30px;
+  left: auto;
 }
 
 .panel-collapse:hover,
@@ -834,9 +838,17 @@ button {
   .panel-restore {
     position: fixed;
     top: max(14px, env(safe-area-inset-top));
-    left: auto;
-    right: max(14px, env(safe-area-inset-right));
     z-index: 30;
+  }
+
+  .panel-collapse {
+    right: max(14px, env(safe-area-inset-right));
+    left: auto;
+  }
+
+  .panel-restore {
+    right: auto;
+    left: max(14px, env(safe-area-inset-left));
   }
 }
 
