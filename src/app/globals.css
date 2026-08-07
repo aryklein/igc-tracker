@@ -446,6 +446,20 @@ button {
   white-space: nowrap;
 }
 
+.flight-summary dd.vario-lift {
+  color: #8dff5a;
+}
+
+.flight-summary dd.vario-sink {
+  color: #ff7878;
+}
+
+.flight-summary .peak-time {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
 .share-panel {
   display: grid;
   gap: 8px;

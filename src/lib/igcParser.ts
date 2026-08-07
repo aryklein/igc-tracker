@@ -1,4 +1,4 @@
-import { distanceMeters } from "@/lib/flightMath";
+import { distanceMeters, varioPeaks } from "@/lib/flightMath";
 import type { FlightPoint, ParsedFlight } from "@/types/flight";
 
 function parseIgcDate(content: string) {
@@ -144,6 +144,8 @@ export function parseIgcFile(content: string, filename: string): ParsedFlight {
   }
 
   const endTime = points.at(-1)?.timestamp ?? startTime;
+  const durationMs = endTime - startTime;
+  const { maxLift, maxSink } = varioPeaks(points, durationMs);
 
   return {
     filename,
@@ -152,9 +154,11 @@ export function parseIgcFile(content: string, filename: string): ParsedFlight {
     points,
     startTime,
     endTime,
-    durationMs: endTime - startTime,
+    durationMs,
     distanceMeters: distance,
     minAltitude,
     maxAltitude,
+    maxLift,
+    maxSink,
   };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { formatDistance, formatDuration } from "@/lib/flightMath";
+import { formatDistance, formatDuration, formatProgressTime } from "@/lib/flightMath";
 import { parseIgcFile } from "@/lib/igcParser";
 import type { ComparedFlight, FlightSyncMode, ParsedFlight } from "@/types/flight";
 
@@ -275,6 +275,20 @@ export function FileUpload({
               <dt>Altitude</dt>
               <dd>
                 {Math.round(primaryFlight.flight.minAltitude)}-{Math.round(primaryFlight.flight.maxAltitude)} m
+              </dd>
+            </div>
+            <div>
+              <dt>Max lift</dt>
+              <dd className="vario-lift">
+                {primaryFlight.flight.maxLift ? `+${primaryFlight.flight.maxLift.value.toFixed(1)} m/s` : "--"}
+                {primaryFlight.flight.maxLift ? <span className="peak-time">at {formatProgressTime(primaryFlight.flight.maxLift.elapsedMs)}</span> : null}
+              </dd>
+            </div>
+            <div>
+              <dt>Max sink</dt>
+              <dd className="vario-sink">
+                {primaryFlight.flight.maxSink ? `${primaryFlight.flight.maxSink.value.toFixed(1)} m/s` : "--"}
+                {primaryFlight.flight.maxSink ? <span className="peak-time">at {formatProgressTime(primaryFlight.flight.maxSink.elapsedMs)}</span> : null}
               </dd>
             </div>
             {primaryFlight.flight.pilotName ? (

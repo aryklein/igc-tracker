@@ -8,6 +8,11 @@ export type FlightPoint = {
   pressureAltitude: number | null;
 };
 
+export type VarioPeak = {
+  value: number;
+  elapsedMs: number;
+};
+
 export type ParsedFlight = {
   filename: string;
   pilotName: string | null;
@@ -19,6 +24,8 @@ export type ParsedFlight = {
   distanceMeters: number;
   minAltitude: number;
   maxAltitude: number;
+  maxLift: VarioPeak | null;
+  maxSink: VarioPeak | null;
 };
 
 export type ComparedFlight = {
