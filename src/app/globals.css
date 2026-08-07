@@ -861,6 +861,11 @@ button {
     right: auto;
     left: max(14px, env(safe-area-inset-left));
   }
+
+  .panel-collapse svg,
+  .panel-restore svg {
+    transform: rotate(90deg);
+  }
 }
 
 @media (max-width: 560px) {
