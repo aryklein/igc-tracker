@@ -168,6 +168,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   const lastFrameRef = useRef<number | null>(null);
   const isPlayingRef = useRef(false);
   const speedRef = useRef(8);
+  const framingOffsetRef = useRef(0);
   const followedFlightIdRef = useRef<string | null>(followedFlightId);
   const syncModeRef = useRef<FlightSyncMode>(syncMode);
   const orbitRef = useRef({ heading: 0, pitch: -0.75, range: 2200 });
@@ -192,6 +193,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
     }
 
     if (!isPanelCollapsed || !window.matchMedia("(max-width: 880px)").matches) {
+      framingOffsetRef.current = 0;
       frustum.yOffset = 0;
       viewer.scene.requestRender();
       return;
@@ -206,7 +208,8 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
     const verticalFov = aspectRatio > 1 ? 2 * Math.atan(Math.tan(fov / 2) / aspectRatio) : fov;
 
     // Center the followed pilot in the canvas area not obscured by the bottom HUD.
-    frustum.yOffset = -frustum.near * Math.tan(verticalFov / 2) * (obscuredHeight / canvasHeight);
+    framingOffsetRef.current = -frustum.near * Math.tan(verticalFov / 2) * (obscuredHeight / canvasHeight);
+    frustum.yOffset = framingOffsetRef.current;
     viewer.scene.requestRender();
   }, [hudElement, isPanelCollapsed]);
 
@@ -328,6 +331,11 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
 
     const { heading, pitch, range } = orbitRef.current;
     viewer.camera.lookAt(target, new Cesium.HeadingPitchRange(heading, pitch, range));
+
+    const frustum = viewer.camera.frustum;
+    if ("yOffset" in frustum) {
+      frustum.yOffset = framingOffsetRef.current;
+    }
   }, []);
 
   const prepareFlightRenderData = useCallback(
