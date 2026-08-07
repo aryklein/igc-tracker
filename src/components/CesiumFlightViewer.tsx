@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { formatProgressTime, verticalSpeedAtElapsed } from "@/lib/flightMath";
+import { verticalSpeedAtElapsed } from "@/lib/flightMath";
 import type { ComparedFlight, FlightPoint, FlightSyncMode, ParsedFlight } from "@/types/flight";
 import { PlaybackControls } from "./PlaybackControls";
 
@@ -463,7 +463,11 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
           updateCamera(result.position);
           setCurrentPoint(result.current.point);
           setCurrentAgl(Math.max(0, result.current.point.altitude - groundHeight));
-          setVerticalSpeed(verticalSpeedAtElapsed(renderData.flight.flight.points, result.current.point.elapsedMs));
+          setVerticalSpeed(
+            result.flightElapsed > renderData.flight.flight.durationMs
+              ? 0
+              : verticalSpeedAtElapsed(renderData.flight.flight.points, result.current.point.elapsedMs),
+          );
         }
       }
     },
@@ -1026,22 +1030,6 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
               </div>
               <em className={verticalSpeed >= 0 ? "climb" : "sink"}>{verticalSpeed.toFixed(1)} m/s</em>
             </div>
-            <dl className="vario-peaks">
-              <div>
-                <dt>Max lift</dt>
-                <dd className="lift">
-                  {followedFlight.flight.maxLift ? `+${followedFlight.flight.maxLift.value.toFixed(1)} m/s` : "--"}
-                  {followedFlight.flight.maxLift ? <time>at {formatProgressTime(followedFlight.flight.maxLift.elapsedMs)}</time> : null}
-                </dd>
-              </div>
-              <div>
-                <dt>Max sink</dt>
-                <dd className="sink">
-                  {followedFlight.flight.maxSink ? `${followedFlight.flight.maxSink.value.toFixed(1)} m/s` : "--"}
-                  {followedFlight.flight.maxSink ? <time>at {formatProgressTime(followedFlight.flight.maxSink.elapsedMs)}</time> : null}
-                </dd>
-              </div>
-            </dl>
           </div>
           <PlaybackControls
             currentMs={currentMs}

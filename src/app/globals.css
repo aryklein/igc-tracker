@@ -446,6 +446,20 @@ button {
   white-space: nowrap;
 }
 
+.flight-summary dd.vario-lift {
+  color: #8dff5a;
+}
+
+.flight-summary dd.vario-sink {
+  color: #ff7878;
+}
+
+.flight-summary .peak-time {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
 .share-panel {
   display: grid;
   gap: 8px;
@@ -679,45 +693,6 @@ button {
   background: #ff4f4f;
 }
 
-.vario-peaks {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.vario-peaks div {
-  min-width: 0;
-}
-
-.vario-peaks dt,
-.vario-peaks time {
-  color: var(--muted);
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.vario-peaks dd {
-  display: grid;
-  gap: 2px;
-  margin-top: 3px;
-  font-family: var(--font-mono), monospace;
-  font-size: 0.84rem;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.vario-peaks dd.lift {
-  color: #8dff5a;
-}
-
-.vario-peaks dd.sink {
-  color: #ff7878;
-}
-
 .playback-card {
   display: grid;
   gap: 12px;
@@ -915,20 +890,6 @@ button {
 
   .app-shell.panel-collapsed .flight-card em {
     padding: 4px 7px;
-    font-size: clamp(0.72rem, 2.8vw, 0.8rem);
-  }
-
-  .app-shell.panel-collapsed .vario-peaks {
-    gap: 6px;
-    padding-top: 6px;
-  }
-
-  .app-shell.panel-collapsed .vario-peaks dt,
-  .app-shell.panel-collapsed .vario-peaks time {
-    font-size: clamp(0.58rem, 2.4vw, 0.66rem);
-  }
-
-  .app-shell.panel-collapsed .vario-peaks dd {
     font-size: clamp(0.72rem, 2.8vw, 0.8rem);
   }
 
