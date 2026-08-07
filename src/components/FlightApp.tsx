@@ -32,6 +32,7 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
       : [],
   );
   const [primaryFlightId, setPrimaryFlightId] = useState<string | null>(initialFlight ? "initial-flight" : null);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
   const [syncMode, setSyncMode] = useState<FlightSyncMode>("launch");
   const primaryFlight = flights.find((entry) => entry.id === primaryFlightId) ?? flights[0] ?? null;
 
@@ -45,8 +46,12 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
 
     setFlights((currentFlights) => [...currentFlights, ...additions]);
 
-    if (!primaryFlightId && additions[0]) {
-      setPrimaryFlightId(additions[0].id);
+    if (!primaryFlightId && additions.length > 0) {
+      const firstFlight = additions.reduce((earliest, entry) =>
+        entry.flight.startTime < earliest.flight.startTime ? entry : earliest,
+      );
+
+      setPrimaryFlightId(firstFlight.id);
     }
   }
 
@@ -59,8 +64,16 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
   }
 
   return (
-    <main className="app-shell">
+    <main className={isPanelCollapsed ? "app-shell panel-collapsed" : "app-shell"}>
+      {isPanelCollapsed ? (
+        <button className="panel-restore" type="button" onClick={() => setIsPanelCollapsed(false)}>
+          Show panel
+        </button>
+      ) : null}
       <aside className="intro-panel">
+        <button className="panel-collapse" type="button" onClick={() => setIsPanelCollapsed(true)}>
+          Hide panel
+        </button>
         <div>
           <div className="brand-lockup">
             <AppLogo />
