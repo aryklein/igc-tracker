@@ -76,7 +76,7 @@ button {
   position: absolute;
   z-index: 10;
   top: 30px;
-  right: 30px;
+  left: 30px;
   min-height: 44px;
   width: fit-content;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -834,6 +834,7 @@ button {
   .panel-restore {
     position: fixed;
     top: max(14px, env(safe-area-inset-top));
+    left: auto;
     right: max(14px, env(safe-area-inset-right));
     z-index: 30;
   }
