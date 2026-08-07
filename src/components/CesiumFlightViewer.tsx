@@ -168,7 +168,8 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   const lastFrameRef = useRef<number | null>(null);
   const isPlayingRef = useRef(false);
   const speedRef = useRef(8);
-  const framingOffsetRef = useRef(0);
+  const cameraTargetRef = useRef<Cartesian3 | undefined>(undefined);
+  const fullscreenHudRatioRef = useRef(0);
   const followedFlightIdRef = useRef<string | null>(followedFlightId);
   const syncModeRef = useRef<FlightSyncMode>(syncMode);
   const orbitRef = useRef({ heading: 0, pitch: -0.75, range: 2200 });
@@ -184,17 +185,51 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   const [showLabels, setShowLabels] = useState(true);
   const [hudElement, setHudElement] = useState<HTMLDivElement | null>(null);
 
+  const reframeCamera = useCallback(() => {
+    const viewer = viewerRef.current;
+    const Cesium = cesiumRef.current;
+    const target = cameraTargetRef.current;
+
+    if (!viewer || !Cesium || !target) {
+      return;
+    }
+
+    const { heading, pitch, range } = orbitRef.current;
+    viewer.camera.lookAt(target, new Cesium.HeadingPitchRange(heading, pitch, range));
+
+    if (fullscreenHudRatioRef.current === 0) {
+      return;
+    }
+
+    const frustum = viewer?.camera.frustum;
+    if (!frustum || !("fov" in frustum)) {
+      return;
+    }
+
+    const aspectRatio = Math.max(1, viewer.canvas.clientWidth) / Math.max(1, viewer.canvas.clientHeight);
+    const fov = frustum.fov ?? Math.PI / 3;
+    const verticalFov = aspectRatio > 1 ? 2 * Math.atan(Math.tan(fov / 2) / aspectRatio) : fov;
+    const targetDistance = Cesium.Cartesian3.distance(viewer.camera.position, target);
+    const targetOffset = targetDistance * Math.tan(verticalFov / 2) * fullscreenHudRatioRef.current;
+    const shiftedTarget = Cesium.Cartesian3.add(
+      target,
+      Cesium.Cartesian3.multiplyByScalar(viewer.camera.up, -targetOffset, new Cesium.Cartesian3()),
+      new Cesium.Cartesian3(),
+    );
+
+    viewer.camera.lookAt(shiftedTarget, new Cesium.HeadingPitchRange(heading, pitch, range));
+  }, []);
+
   const updateFullscreenFraming = useCallback(() => {
     const viewer = viewerRef.current;
-    const frustum = viewer?.camera.frustum;
 
-    if (!viewer || !frustum || !("yOffset" in frustum) || !("fov" in frustum)) {
+    if (!viewer) {
       return;
     }
 
     if (!isPanelCollapsed || !window.matchMedia("(max-width: 880px)").matches) {
-      framingOffsetRef.current = 0;
-      frustum.yOffset = 0;
+      fullscreenHudRatioRef.current = 0;
+      reframeCamera();
       viewer.scene.requestRender();
       return;
     }
@@ -203,15 +238,10 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
     const hudRect = hudElement?.getBoundingClientRect();
     const canvasHeight = Math.max(1, canvasRect.height);
     const obscuredHeight = hudRect ? Math.max(0, canvasRect.bottom - hudRect.top) : 0;
-    const aspectRatio = Math.max(1, viewer.canvas.clientWidth) / Math.max(1, viewer.canvas.clientHeight);
-    const fov = frustum.fov ?? Math.PI / 3;
-    const verticalFov = aspectRatio > 1 ? 2 * Math.atan(Math.tan(fov / 2) / aspectRatio) : fov;
-
-    // Center the followed pilot in the canvas area not obscured by the bottom HUD.
-    framingOffsetRef.current = -frustum.near * Math.tan(verticalFov / 2) * (obscuredHeight / canvasHeight);
-    frustum.yOffset = framingOffsetRef.current;
+    fullscreenHudRatioRef.current = obscuredHeight / canvasHeight;
+    reframeCamera();
     viewer.scene.requestRender();
-  }, [hudElement, isPanelCollapsed]);
+  }, [hudElement, isPanelCollapsed, reframeCamera]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -322,21 +352,9 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   }, []);
 
   const updateCamera = useCallback((target: Cartesian3 | undefined) => {
-    const Cesium = cesiumRef.current;
-    const viewer = viewerRef.current;
-
-    if (!Cesium || !viewer || !target) {
-      return;
-    }
-
-    const { heading, pitch, range } = orbitRef.current;
-    viewer.camera.lookAt(target, new Cesium.HeadingPitchRange(heading, pitch, range));
-
-    const frustum = viewer.camera.frustum;
-    if ("yOffset" in frustum) {
-      frustum.yOffset = framingOffsetRef.current;
-    }
-  }, []);
+    cameraTargetRef.current = target;
+    reframeCamera();
+  }, [reframeCamera]);
 
   const prepareFlightRenderData = useCallback(
     async (Cesium: CesiumModule, viewer: Viewer, comparedFlight: ComparedFlight) => {
@@ -418,6 +436,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
           renderData.visibleSegmentCount = 0;
 
           if (isFollowed) {
+            updateCamera(undefined);
             setCurrentPoint(null);
             setCurrentAgl(null);
             setVerticalSpeed(0);
