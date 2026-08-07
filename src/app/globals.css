@@ -834,6 +834,7 @@ button {
   .app-shell.panel-collapsed .cesium-container {
     position: absolute;
     inset: 0;
+    bottom: var(--fullscreen-hud-reserved, 0px);
     height: auto;
     min-height: 0;
     border-radius: 0;
