@@ -181,6 +181,36 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
   const [verticalSpeed, setVerticalSpeed] = useState(0);
   const [showLabels, setShowLabels] = useState(true);
 
+  useEffect(() => {
+    const container = containerRef.current;
+
+    if (!container || !isReady) {
+      return;
+    }
+
+    let animationFrame: number | null = null;
+    const resizeObserver = new ResizeObserver(() => {
+      if (animationFrame !== null) {
+        cancelAnimationFrame(animationFrame);
+      }
+
+      animationFrame = requestAnimationFrame(() => {
+        viewerRef.current?.resize();
+        viewerRef.current?.scene.requestRender();
+      });
+    });
+
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+
+      if (animationFrame !== null) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [isReady]);
+
   const followedFlight = flights.find((entry) => entry.id === followedFlightId) ?? flights[0] ?? null;
   const timelineStart = syncMode === "actual" && flights.length > 0 ? Math.min(...flights.map((entry) => entry.flight.startTime)) : 0;
   const timelineDuration =
