@@ -39,7 +39,10 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
 
   useEffect(() => {
     if (isPanelCollapsed) {
-      appShellRef.current?.scrollIntoView({ block: "start" });
+      requestAnimationFrame(() => {
+        appShellRef.current?.scrollIntoView({ block: "start" });
+        window.dispatchEvent(new Event("resize"));
+      });
     }
   }, [isPanelCollapsed]);
 
