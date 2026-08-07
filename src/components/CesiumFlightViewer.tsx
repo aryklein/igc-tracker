@@ -181,6 +181,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   const [currentAgl, setCurrentAgl] = useState<number | null>(null);
   const [verticalSpeed, setVerticalSpeed] = useState(0);
   const [showLabels, setShowLabels] = useState(true);
+  const [hudElement, setHudElement] = useState<HTMLDivElement | null>(null);
 
   const updateFullscreenFraming = useCallback(() => {
     const viewer = viewerRef.current;
@@ -196,36 +197,52 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
       return;
     }
 
+    const canvasRect = viewer.canvas.getBoundingClientRect();
+    const hudRect = hudElement?.getBoundingClientRect();
+    const canvasHeight = Math.max(1, canvasRect.height);
+    const obscuredHeight = hudRect ? Math.max(0, canvasRect.bottom - hudRect.top) : 0;
     const aspectRatio = Math.max(1, viewer.canvas.clientWidth) / Math.max(1, viewer.canvas.clientHeight);
     const fov = frustum.fov ?? Math.PI / 3;
     const verticalFov = aspectRatio > 1 ? 2 * Math.atan(Math.tan(fov / 2) / aspectRatio) : fov;
 
-    // Move the projected center upward so the followed pilot remains above the bottom HUD.
-    frustum.yOffset = -frustum.near * Math.tan(verticalFov / 2) * 0.3;
+    // Center the followed pilot in the canvas area not obscured by the bottom HUD.
+    frustum.yOffset = -frustum.near * Math.tan(verticalFov / 2) * (obscuredHeight / canvasHeight);
     viewer.scene.requestRender();
-  }, [isPanelCollapsed]);
+  }, [hudElement, isPanelCollapsed]);
 
   useEffect(() => {
     const container = containerRef.current;
+    const hud = hudElement;
 
     if (!container || !isReady) {
       return;
     }
 
     let animationFrame: number | null = null;
-    const resizeObserver = new ResizeObserver(() => {
+    let shouldResizeViewer = false;
+    const resizeObserver = new ResizeObserver((entries) => {
+      shouldResizeViewer ||= entries.some((entry) => entry.target === container);
+
       if (animationFrame !== null) {
         cancelAnimationFrame(animationFrame);
       }
 
       animationFrame = requestAnimationFrame(() => {
-        viewerRef.current?.resize();
+        if (shouldResizeViewer) {
+          viewerRef.current?.resize();
+          shouldResizeViewer = false;
+        }
+
         updateFullscreenFraming();
         viewerRef.current?.scene.requestRender();
       });
     });
 
     resizeObserver.observe(container);
+
+    if (hud) {
+      resizeObserver.observe(hud);
+    }
 
     return () => {
       resizeObserver.disconnect();
@@ -234,7 +251,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
         cancelAnimationFrame(animationFrame);
       }
     };
-  }, [isReady, updateFullscreenFraming]);
+  }, [hudElement, isReady, updateFullscreenFraming]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 880px)");
@@ -1019,7 +1036,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
       ) : null}
       {loadError ? <div className="viewer-error">{loadError}</div> : null}
       {followedFlight ? (
-        <div className="hud">
+        <div ref={setHudElement} className="hud">
           <div className="flight-card">
             <div className="flight-live-stats">
               <div className="altitude-stack">
