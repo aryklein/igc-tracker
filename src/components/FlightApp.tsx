@@ -63,6 +63,11 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
     setFlights((currentFlights) => currentFlights.filter((entry) => entry.id !== id));
   }
 
+  function handlePanelCollapsed() {
+    setIsPanelCollapsed(true);
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+  }
+
   return (
     <main className={isPanelCollapsed ? "app-shell panel-collapsed" : "app-shell"}>
       {isPanelCollapsed ? (
@@ -71,7 +76,7 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
         </button>
       ) : null}
       <aside className="intro-panel">
-        <button className="panel-collapse" type="button" onClick={() => setIsPanelCollapsed(true)}>
+        <button className="panel-collapse" type="button" onClick={handlePanelCollapsed}>
           Hide panel
         </button>
         <div>

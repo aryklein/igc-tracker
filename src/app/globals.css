@@ -751,6 +751,7 @@ button {
   .app-shell.panel-collapsed {
     height: 100dvh;
     grid-template-columns: 1fr;
+    padding: 0;
   }
 
   .intro-panel {
@@ -784,8 +785,9 @@ button {
 
   .app-shell.panel-collapsed .viewer-shell {
     display: block;
-    min-height: calc(100dvh - 36px);
+    min-height: 100dvh;
     overflow: hidden;
+    border-radius: 0;
   }
 
   .app-shell.panel-collapsed .cesium-container {
@@ -793,7 +795,7 @@ button {
     inset: 0;
     height: auto;
     min-height: 0;
-    border-radius: 28px;
+    border-radius: 0;
   }
 
   .app-shell.panel-collapsed .hud {
@@ -818,14 +820,6 @@ button {
     height: 54vh;
     min-height: 320px;
     border-radius: 20px 20px 0 0;
-  }
-
-  .app-shell.panel-collapsed .viewer-shell {
-    min-height: calc(100dvh - 20px);
-  }
-
-  .app-shell.panel-collapsed .cesium-container {
-    border-radius: 20px;
   }
 
   .panel-restore {
