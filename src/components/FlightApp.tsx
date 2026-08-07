@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AppLogo } from "./AppLogo";
 import { CesiumFlightViewer } from "./CesiumFlightViewer";
 import { FileUpload } from "./FileUpload";
@@ -34,6 +34,8 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
   const [primaryFlightId, setPrimaryFlightId] = useState<string | null>(initialFlight ? "initial-flight" : null);
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
   const [syncMode, setSyncMode] = useState<FlightSyncMode>("launch");
+  const collapseButtonRef = useRef<HTMLButtonElement>(null);
+  const restoreButtonRef = useRef<HTMLButtonElement>(null);
   const primaryFlight = flights.find((entry) => entry.id === primaryFlightId) ?? flights[0] ?? null;
 
   function handleFlightsLoaded(nextFlights: Array<{ flight: ParsedFlight; sourceText: string }>) {
@@ -65,13 +67,33 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
 
   return (
     <main className={isPanelCollapsed ? "app-shell panel-collapsed" : "app-shell"}>
-      {isPanelCollapsed ? (
-        <button className="panel-restore" type="button" onClick={() => setIsPanelCollapsed(false)}>
-          Show panel
-        </button>
-      ) : null}
-      <aside className="intro-panel">
-        <button className="panel-collapse" type="button" onClick={() => setIsPanelCollapsed(true)}>
+      <button
+        ref={restoreButtonRef}
+        className="panel-restore"
+        type="button"
+        aria-controls="flight-panel"
+        aria-hidden={!isPanelCollapsed}
+        aria-expanded={!isPanelCollapsed}
+        tabIndex={isPanelCollapsed ? 0 : -1}
+        onClick={() => {
+          setIsPanelCollapsed(false);
+          requestAnimationFrame(() => collapseButtonRef.current?.focus());
+        }}
+      >
+        Show panel
+      </button>
+      <aside id="flight-panel" className="intro-panel" aria-hidden={isPanelCollapsed} inert={isPanelCollapsed}>
+        <button
+          ref={collapseButtonRef}
+          className="panel-collapse"
+          type="button"
+          aria-controls="flight-panel"
+          aria-expanded={!isPanelCollapsed}
+          onClick={() => {
+            setIsPanelCollapsed(true);
+            requestAnimationFrame(() => restoreButtonRef.current?.focus());
+          }}
+        >
           Hide panel
         </button>
         <div>
