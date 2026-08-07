@@ -14,6 +14,7 @@ type TerrainProvider = import("cesium").TerrainProvider;
 type CesiumFlightViewerProps = {
   flights: ComparedFlight[];
   followedFlightId: string | null;
+  isPanelCollapsed: boolean;
   syncMode?: FlightSyncMode;
 };
 
@@ -157,7 +158,7 @@ function getFlightElapsedMs(flight: ParsedFlight, timelineMs: number, syncMode: 
   return timelineStart + timelineMs - flight.startTime;
 }
 
-export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "launch" }: CesiumFlightViewerProps) {
+export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed, syncMode = "launch" }: CesiumFlightViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const cesiumRef = useRef<CesiumModule | null>(null);
   const viewerRef = useRef<Viewer | null>(null);
@@ -181,6 +182,29 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
   const [verticalSpeed, setVerticalSpeed] = useState(0);
   const [showLabels, setShowLabels] = useState(true);
 
+  const updateFullscreenFraming = useCallback(() => {
+    const viewer = viewerRef.current;
+    const frustum = viewer?.camera.frustum;
+
+    if (!viewer || !frustum || !("yOffset" in frustum) || !("fov" in frustum)) {
+      return;
+    }
+
+    if (!isPanelCollapsed || !window.matchMedia("(max-width: 880px)").matches) {
+      frustum.yOffset = 0;
+      viewer.scene.requestRender();
+      return;
+    }
+
+    const aspectRatio = Math.max(1, viewer.canvas.clientWidth) / Math.max(1, viewer.canvas.clientHeight);
+    const fov = frustum.fov ?? Math.PI / 3;
+    const verticalFov = aspectRatio > 1 ? 2 * Math.atan(Math.tan(fov / 2) / aspectRatio) : fov;
+
+    // Move the projected center upward so the followed pilot remains above the bottom HUD.
+    frustum.yOffset = -frustum.near * Math.tan(verticalFov / 2) * 0.3;
+    viewer.scene.requestRender();
+  }, [isPanelCollapsed]);
+
   useEffect(() => {
     const container = containerRef.current;
 
@@ -196,6 +220,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
 
       animationFrame = requestAnimationFrame(() => {
         viewerRef.current?.resize();
+        updateFullscreenFraming();
         viewerRef.current?.scene.requestRender();
       });
     });
@@ -209,7 +234,19 @@ export function CesiumFlightViewer({ flights, followedFlightId, syncMode = "laun
         cancelAnimationFrame(animationFrame);
       }
     };
-  }, [isReady]);
+  }, [isReady, updateFullscreenFraming]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 880px)");
+    const handleChange = () => updateFullscreenFraming();
+
+    if (isReady) {
+      updateFullscreenFraming();
+    }
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, [isReady, updateFullscreenFraming]);
 
   const followedFlight = flights.find((entry) => entry.id === followedFlightId) ?? flights[0] ?? null;
   const timelineStart = syncMode === "actual" && flights.length > 0 ? Math.min(...flights.map((entry) => entry.flight.startTime)) : 0;
