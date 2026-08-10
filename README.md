@@ -5,7 +5,7 @@
 ## Features
 
 - Upload `.igc` files directly in the browser.
-- Compare up to five flights at once with distinct pilot colors.
+- Compare up to ten flights at once with distinct pilot colors.
 - Follow any pilot; switch without restarting playback.
 - Sync comparison markers by launch time or actual flight time.
 - Parse IGC `B` fixes locally; no backend upload is required.
@@ -15,7 +15,9 @@
 - Seek through the flight with the progress slider.
 - Color the completed track from green to red based on altitude across the whole flight.
 - Show current altitude and vertical speed in `m/s`.
+- Show cached 10-second rolling-vario max lift and max sink with their flight-progress times.
 - Draw a vertical projection line from the paraglider to the terrain/map surface.
+- Collapse the panel for an animated fullscreen replay view, including a HUD-aware mobile viewport.
 
 ## Tech Stack
 
@@ -80,7 +82,7 @@ src/components/FileUpload.tsx        Reads, parses, and lists IGC files; sync co
 src/components/CesiumFlightViewer.tsx 3D replay, camera, tracks, markers, terrain projection
 src/components/PlaybackControls.tsx  Play, reset, speed, and seek controls
 src/lib/igcParser.ts                 IGC parser and flight stats
-src/lib/flightMath.ts                Distance and formatting helpers
+src/lib/flightMath.ts                Distance, vario, and formatting helpers
 src/lib/sharedFlights.ts             Share link helpers and expiration logic
 src/types/flight.ts                  Flight data and comparison types
 ```
