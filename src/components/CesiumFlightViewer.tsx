@@ -163,6 +163,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   const syncModeRef = useRef<FlightSyncMode>(syncMode);
   const orbitRef = useRef({ heading: 0, pitch: -0.75, range: 2200 });
   const chaseRef = useRef({ enabled: false, heading: 0, pitch: -0.75 });
+  const orbitalRef = useRef({ enabled: false, speed: 0 });
 
   const [isReady, setIsReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -174,6 +175,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   const [verticalSpeed, setVerticalSpeed] = useState(0);
   const [showLabels, setShowLabels] = useState(true);
   const [followDirection, setFollowDirection] = useState(false);
+  const [orbitalView, setOrbitalView] = useState(false);
   const [hudElement, setHudElement] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -900,7 +902,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
       const deltaY = event.clientY - previousY;
       previousX = event.clientX;
       previousY = event.clientY;
-      if (chaseRef.current.enabled) {
+      if (chaseRef.current.enabled || orbitalRef.current.enabled) {
         return;
       }
 
@@ -943,6 +945,17 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   useEffect(() => {
     function tick(now: number) {
       try {
+        const orbital = orbitalRef.current;
+        if (orbital.enabled && followedFlight) {
+          const seconds = Math.min(0.1, Math.max(0, now - (lastFrameRef.current ?? now)) / 1000);
+          // Ease into a two-minute revolution, independent of replay speed.
+          orbital.speed += (Math.PI / 60 - orbital.speed) * (1 - Math.exp(-seconds / 0.8));
+          orbitRef.current.heading = (orbitRef.current.heading + orbital.speed * seconds) % (Math.PI * 2);
+          const data = renderDataRef.current.get(followedFlight.id);
+          if (data) {
+            updateCamera(getCurrentFlightPosition(data, elapsedRef.current, syncModeRef.current, timelineStart)?.position);
+          }
+        }
         const chase = chaseRef.current;
         if (chase.enabled && followedFlight) {
           const flight = followedFlight.flight;
@@ -1003,6 +1016,9 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   function handleFollowDirectionChange(enabled: boolean) {
     const chase = chaseRef.current;
     if (enabled) {
+      orbitalRef.current.enabled = false;
+      orbitalRef.current.speed = 0;
+      setOrbitalView(false);
       chase.heading = orbitRef.current.heading;
       chase.pitch = orbitRef.current.pitch;
     } else {
@@ -1012,6 +1028,15 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
     }
     chase.enabled = enabled;
     setFollowDirection(enabled);
+  }
+
+  function handleOrbitalViewChange(enabled: boolean) {
+    if (enabled && chaseRef.current.enabled) {
+      handleFollowDirectionChange(false);
+    }
+    orbitalRef.current.enabled = enabled;
+    orbitalRef.current.speed = 0;
+    setOrbitalView(enabled);
   }
 
   function handlePlayPause() {
@@ -1086,6 +1111,8 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
             showLabels={showLabels}
             followDirection={followDirection}
             onFollowDirectionChange={handleFollowDirectionChange}
+            orbitalView={orbitalView}
+            onOrbitalViewChange={handleOrbitalViewChange}
             speed={speed}
             onPlayPause={handlePlayPause}
             onReset={handleReset}
