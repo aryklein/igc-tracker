@@ -164,6 +164,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   const orbitRef = useRef({ heading: 0, pitch: -0.75, range: 2200 });
   const chaseRef = useRef({ enabled: false, heading: 0, pitch: -0.75 });
   const orbitalRef = useRef({ enabled: false, speed: 0 });
+  const cameraInteractionRef = useRef(false);
 
   const [isReady, setIsReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -871,6 +872,8 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
     function handlePointerDown(event: PointerEvent) {
       event.preventDefault();
       activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      cameraInteractionRef.current = true;
+      orbitalRef.current.speed = 0;
       previousX = event.clientX;
       previousY = event.clientY;
       canvasElement.setPointerCapture(event.pointerId);
@@ -902,7 +905,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
       const deltaY = event.clientY - previousY;
       previousX = event.clientX;
       previousY = event.clientY;
-      if (chaseRef.current.enabled || orbitalRef.current.enabled) {
+      if (chaseRef.current.enabled) {
         return;
       }
 
@@ -913,7 +916,13 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
 
     function handlePointerUp(event: PointerEvent) {
       activePointers.delete(event.pointerId);
+      cameraInteractionRef.current = activePointers.size > 0;
       previousPinchDistance = getPinchDistance();
+      const remainingPointer = activePointers.values().next().value;
+      if (remainingPointer) {
+        previousX = remainingPointer.x;
+        previousY = remainingPointer.y;
+      }
 
       if (canvasElement.hasPointerCapture(event.pointerId)) {
         canvasElement.releasePointerCapture(event.pointerId);
@@ -931,13 +940,17 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
     canvasElement.addEventListener("pointermove", handlePointerMove);
     canvasElement.addEventListener("pointerup", handlePointerUp);
     canvasElement.addEventListener("pointercancel", handlePointerUp);
+    canvasElement.addEventListener("lostpointercapture", handlePointerUp);
     canvasElement.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
+      cameraInteractionRef.current = false;
+      activePointers.clear();
       canvasElement.removeEventListener("pointerdown", handlePointerDown);
       canvasElement.removeEventListener("pointermove", handlePointerMove);
       canvasElement.removeEventListener("pointerup", handlePointerUp);
       canvasElement.removeEventListener("pointercancel", handlePointerUp);
+      canvasElement.removeEventListener("lostpointercapture", handlePointerUp);
       canvasElement.removeEventListener("wheel", handleWheel);
     };
   }, [flights, getCurrentFlightPosition, isReady, updateCamera]);
@@ -946,10 +959,10 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
     function tick(now: number) {
       try {
         const orbital = orbitalRef.current;
-        if (orbital.enabled && followedFlight) {
+        if (orbital.enabled && followedFlight && !cameraInteractionRef.current) {
           const seconds = Math.min(0.1, Math.max(0, now - (lastFrameRef.current ?? now)) / 1000);
-          // Ease into a two-minute revolution, independent of replay speed.
-          orbital.speed += (Math.PI / 60 - orbital.speed) * (1 - Math.exp(-seconds / 0.8));
+          // Ease into a 90-second revolution, independent of replay speed.
+          orbital.speed += (Math.PI / 45 - orbital.speed) * (1 - Math.exp(-seconds / 0.8));
           orbitRef.current.heading = (orbitRef.current.heading + orbital.speed * seconds) % (Math.PI * 2);
           const data = renderDataRef.current.get(followedFlight.id);
           if (data) {

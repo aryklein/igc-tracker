@@ -65,7 +65,7 @@ export function PlaybackControls({
           <input type="checkbox" checked={followDirection} onChange={(event) => onFollowDirectionChange(event.target.checked)} />
           Follow Pilot
         </label>
-        <label className="label-toggle" title="Slowly circle the pilot, even while paused; zoom remains available">
+        <label className="label-toggle" title="Slowly circle the pilot, even while paused. Drag to adjust the view; orbit resumes on release. Zoom remains available.">
           <input type="checkbox" checked={orbitalView} onChange={(event) => onOrbitalViewChange(event.target.checked)} />
           Orbital View
         </label>
