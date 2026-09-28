@@ -10,6 +10,8 @@ type PlaybackControlsProps = {
   durationMs: number;
   isPlaying: boolean;
   showLabels: boolean;
+  followDirection: boolean;
+  onFollowDirectionChange: (enabled: boolean) => void;
   speed: number;
   onPlayPause: () => void;
   onReset: () => void;
@@ -24,6 +26,8 @@ export function PlaybackControls({
   durationMs,
   isPlaying,
   showLabels,
+  followDirection,
+  onFollowDirectionChange,
   speed,
   onPlayPause,
   onReset,
@@ -52,6 +56,10 @@ export function PlaybackControls({
         <label className="label-toggle">
           <input type="checkbox" checked={showLabels} onChange={(event) => onShowLabelsChange(event.target.checked)} />
           Labels
+        </label>
+        <label className="label-toggle" title="Smoothly follow the pilot's direction of travel; zoom remains available">
+          <input type="checkbox" checked={followDirection} onChange={(event) => onFollowDirectionChange(event.target.checked)} />
+          Follow direction
         </label>
         <span>
           {formatDuration(currentMs)} / {formatDuration(durationMs)}
