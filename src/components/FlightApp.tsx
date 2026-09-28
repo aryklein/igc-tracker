@@ -41,6 +41,23 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
   const primaryFlight = flights.find((entry) => entry.id === primaryFlightId) ?? flights[0] ?? null;
 
   useEffect(() => {
+    if (!initialFlight) {
+      return;
+    }
+
+    // Shared flights arrive pre-parsed. Check the viewport after hydration,
+    // once per initial flight, so restoring the panel stays under user control.
+    const frame = requestAnimationFrame(() => {
+      if (window.matchMedia("(max-width: 880px)").matches) {
+        autoCollapseFocusRef.current = true;
+        setIsPanelCollapsed(true);
+      }
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [initialFlight]);
+
+  useEffect(() => {
     if (isPanelCollapsed && autoCollapseFocusRef.current) {
       autoCollapseFocusRef.current = false;
       window.scrollTo({ top: 0, behavior: "instant" });
