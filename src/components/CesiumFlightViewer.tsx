@@ -163,7 +163,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   const syncModeRef = useRef<FlightSyncMode>(syncMode);
   const orbitRef = useRef({ heading: 0, pitch: -0.75, range: 2200 });
   const chaseRef = useRef({ enabled: false, heading: 0, pitch: -0.75 });
-  const orbitalRef = useRef({ enabled: false, speed: 0 });
+  const orbitalRef = useRef({ enabled: true, speed: 0 });
   const cameraInteractionRef = useRef(false);
 
   const [isReady, setIsReady] = useState(false);
@@ -176,7 +176,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   const [verticalSpeed, setVerticalSpeed] = useState(0);
   const [showLabels, setShowLabels] = useState(true);
   const [followDirection, setFollowDirection] = useState(false);
-  const [orbitalView, setOrbitalView] = useState(false);
+  const [orbitalView, setOrbitalView] = useState(true);
   const [hudElement, setHudElement] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
