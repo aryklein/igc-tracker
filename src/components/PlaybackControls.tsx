@@ -12,6 +12,8 @@ type PlaybackControlsProps = {
   showLabels: boolean;
   followDirection: boolean;
   onFollowDirectionChange: (enabled: boolean) => void;
+  orbitalView: boolean;
+  onOrbitalViewChange: (enabled: boolean) => void;
   speed: number;
   onPlayPause: () => void;
   onReset: () => void;
@@ -28,6 +30,8 @@ export function PlaybackControls({
   showLabels,
   followDirection,
   onFollowDirectionChange,
+  orbitalView,
+  onOrbitalViewChange,
   speed,
   onPlayPause,
   onReset,
@@ -59,7 +63,11 @@ export function PlaybackControls({
         </label>
         <label className="label-toggle" title="Smoothly follow the pilot's direction of travel; zoom remains available">
           <input type="checkbox" checked={followDirection} onChange={(event) => onFollowDirectionChange(event.target.checked)} />
-          Follow direction
+          Follow Pilot
+        </label>
+        <label className="label-toggle" title="Slowly circle the pilot, even while paused; zoom remains available">
+          <input type="checkbox" checked={orbitalView} onChange={(event) => onOrbitalViewChange(event.target.checked)} />
+          Orbital View
         </label>
         <span>
           {formatDuration(currentMs)} / {formatDuration(durationMs)}
