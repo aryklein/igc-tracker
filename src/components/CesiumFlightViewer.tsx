@@ -162,6 +162,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   const followedFlightIdRef = useRef<string | null>(followedFlightId);
   const syncModeRef = useRef<FlightSyncMode>(syncMode);
   const orbitRef = useRef({ heading: 0, pitch: -0.75, range: 2200 });
+  const chaseRef = useRef({ enabled: false, heading: 0, pitch: -0.75 });
 
   const [isReady, setIsReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -172,6 +173,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   const [currentAgl, setCurrentAgl] = useState<number | null>(null);
   const [verticalSpeed, setVerticalSpeed] = useState(0);
   const [showLabels, setShowLabels] = useState(true);
+  const [followDirection, setFollowDirection] = useState(false);
   const [hudElement, setHudElement] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -303,7 +305,8 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
     }
 
     const { heading, pitch, range } = orbitRef.current;
-    viewer.camera.lookAt(target, new Cesium.HeadingPitchRange(heading, pitch, range));
+    const chase = chaseRef.current;
+    viewer.camera.lookAt(target, new Cesium.HeadingPitchRange(chase.enabled ? chase.heading : heading, chase.enabled ? chase.pitch : pitch, range));
   }, []);
 
   const prepareFlightRenderData = useCallback(
@@ -897,6 +900,10 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
       const deltaY = event.clientY - previousY;
       previousX = event.clientX;
       previousY = event.clientY;
+      if (chaseRef.current.enabled) {
+        return;
+      }
+
       orbitRef.current.heading -= deltaX * 0.006;
       orbitRef.current.pitch = Math.max(-1.45, Math.min(-0.15, orbitRef.current.pitch + deltaY * 0.004));
       updateCameraFromFollowedFlight();
@@ -936,6 +943,32 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   useEffect(() => {
     function tick(now: number) {
       try {
+        const chase = chaseRef.current;
+        if (chase.enabled && followedFlight) {
+          const flight = followedFlight.flight;
+          const elapsed = Math.max(0, Math.min(flight.durationMs, getFlightElapsedMs(flight, elapsedRef.current, syncModeRef.current, timelineStart)));
+          // A short centered window filters GPS jitter without cutting across whole thermals.
+          const from = findPointAtElapsed(flight.points, Math.max(0, elapsed - 2000)).point;
+          const to = findPointAtElapsed(flight.points, Math.min(flight.durationMs, elapsed + 2000)).point;
+          const lat1 = from.latitude * Math.PI / 180;
+          const lat2 = to.latitude * Math.PI / 180;
+          const deltaLon = (to.longitude - from.longitude) * Math.PI / 180;
+          const east = Math.sin(deltaLon) * Math.cos(lat2);
+          const north = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLon);
+          const seconds = Math.min(0.1, Math.max(0, now - (lastFrameRef.current ?? now)) / 1000);
+          const alpha = 1 - Math.exp(-seconds / 0.65);
+          // Retain heading when movement is too small to distinguish from GPS noise (~3 m).
+          if (Math.hypot(east, north) * 6371000 > 3) {
+            const desired = Math.atan2(east, north);
+            const difference = Math.atan2(Math.sin(desired - chase.heading), Math.cos(desired - chase.heading));
+            chase.heading += difference * alpha;
+          }
+          chase.pitch += (-0.4 - chase.pitch) * alpha;
+          const data = renderDataRef.current.get(followedFlight.id);
+          if (data) {
+            updateCamera(getCurrentFlightPosition(data, elapsedRef.current, syncModeRef.current, timelineStart)?.position);
+          }
+        }
         if (followedFlight && isPlayingRef.current) {
           const previousFrame = lastFrameRef.current ?? now;
           const delta = now - previousFrame;
@@ -965,7 +998,21 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [followedFlight, timelineDuration, updateFlightEntities]);
+  }, [followedFlight, timelineDuration, timelineStart, getCurrentFlightPosition, updateCamera, updateFlightEntities]);
+
+  function handleFollowDirectionChange(enabled: boolean) {
+    const chase = chaseRef.current;
+    if (enabled) {
+      chase.heading = orbitRef.current.heading;
+      chase.pitch = orbitRef.current.pitch;
+    } else {
+      // Resume manual orbit from the current view rather than snapping back.
+      orbitRef.current.heading = chase.heading;
+      orbitRef.current.pitch = chase.pitch;
+    }
+    chase.enabled = enabled;
+    setFollowDirection(enabled);
+  }
 
   function handlePlayPause() {
     if (!followedFlight) {
@@ -1037,6 +1084,8 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
             durationMs={timelineDuration}
             isPlaying={isPlaying}
             showLabels={showLabels}
+            followDirection={followDirection}
+            onFollowDirectionChange={handleFollowDirectionChange}
             speed={speed}
             onPlayPause={handlePlayPause}
             onReset={handleReset}
