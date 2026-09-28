@@ -11,7 +11,7 @@ type FileUploadProps = {
   flights: ComparedFlight[];
   primaryFlightId: string | null;
   allowSharing: boolean;
-  onFlightsLoaded: (flights: Array<{ flight: ParsedFlight; sourceText: string }>) => void;
+  onFlightsLoaded: (flights: Array<{ flight: ParsedFlight; sourceText: string }>, hasUploadWarnings: boolean) => void;
   onPrimaryFlightChange: (id: string) => void;
   onFlightRemoved: (id: string) => void;
   syncMode: FlightSyncMode;
@@ -115,7 +115,10 @@ export function FileUpload({
         setShareLink(null);
         setShareExpiresAt(null);
         setDidCopyShareLink(false);
-        onFlightsLoaded(loadedFlights);
+        onFlightsLoaded(
+          loadedFlights,
+          selectedFiles.length > remainingSlots || failedFiles.length > 0 || duplicateFiles.length > 0,
+        );
       }
 
       if (remainingSlots <= 0) {
