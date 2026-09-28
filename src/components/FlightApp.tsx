@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppLogo } from "./AppLogo";
 import { CesiumFlightViewer } from "./CesiumFlightViewer";
 import { FileUpload } from "./FileUpload";
@@ -37,9 +37,18 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
   const collapseButtonRef = useRef<HTMLButtonElement>(null);
   const mobileCollapseButtonRef = useRef<HTMLButtonElement>(null);
   const restoreButtonRef = useRef<HTMLButtonElement>(null);
+  const autoCollapseFocusRef = useRef(false);
   const primaryFlight = flights.find((entry) => entry.id === primaryFlightId) ?? flights[0] ?? null;
 
-  function handleFlightsLoaded(nextFlights: Array<{ flight: ParsedFlight; sourceText: string }>) {
+  useEffect(() => {
+    if (isPanelCollapsed && autoCollapseFocusRef.current) {
+      autoCollapseFocusRef.current = false;
+      window.scrollTo({ top: 0, behavior: "instant" });
+      restoreButtonRef.current?.focus({ preventScroll: true });
+    }
+  }, [isPanelCollapsed]);
+
+  function handleFlightsLoaded(nextFlights: Array<{ flight: ParsedFlight; sourceText: string }>, hasUploadWarnings: boolean) {
     const availableColors = COMPARISON_COLORS.filter((color) => !flights.some((flight) => flight.color === color));
     const additions = nextFlights.map((entry, index) => ({
       id: crypto.randomUUID(),
@@ -55,6 +64,11 @@ export function FlightApp({ initialFlight = null, initialSourceText = null, allo
       );
 
       setPrimaryFlightId(firstFlight.id);
+    }
+
+    if (additions.length > 0 && !hasUploadWarnings && window.matchMedia("(max-width: 880px)").matches) {
+      autoCollapseFocusRef.current = true;
+      setIsPanelCollapsed(true);
     }
   }
 
