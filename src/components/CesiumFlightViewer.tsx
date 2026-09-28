@@ -961,8 +961,8 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
         const orbital = orbitalRef.current;
         if (orbital.enabled && followedFlight && !cameraInteractionRef.current) {
           const seconds = Math.min(0.1, Math.max(0, now - (lastFrameRef.current ?? now)) / 1000);
-          // Ease into a two-minute revolution, independent of replay speed.
-          orbital.speed += (Math.PI / 60 - orbital.speed) * (1 - Math.exp(-seconds / 0.8));
+          // Ease into a 90-second revolution, independent of replay speed.
+          orbital.speed += (Math.PI / 45 - orbital.speed) * (1 - Math.exp(-seconds / 0.8));
           orbitRef.current.heading = (orbitRef.current.heading + orbital.speed * seconds) % (Math.PI * 2);
           const data = renderDataRef.current.get(followedFlight.id);
           if (data) {
