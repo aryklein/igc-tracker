@@ -577,7 +577,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
                     )
                   : new Cesium.ColorMaterialProperty(Cesium.Color.fromCssColorString(comparedFlight.color)),
               positions: [prepared.positions[index - 1], prepared.positions[index]],
-              width: 3,
+              width: 2.5,
             },
           }),
         );
@@ -622,7 +622,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
             new Cesium.CallbackProperty(() => activeSegmentColor, false),
           ),
           positions: new Cesium.CallbackProperty(() => activeSegmentPositions, false),
-          width: 3,
+          width: 2.5,
         },
       });
       const beamPositions: Cartesian3[] = [];
