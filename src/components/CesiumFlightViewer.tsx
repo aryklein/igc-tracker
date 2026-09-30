@@ -33,18 +33,42 @@ type FlightRenderData = {
   marker: Entity;
   label: Entity;
   beam: Entity;
-  groundTarget: Entity;
+  curtain: Entity;
+  curtainPositions: Cartesian3[];
+  curtainMinimumHeights: number[];
+  curtainMaximumHeights: number[];
+  curtainElapsed: number;
   beamPositions: Cartesian3[];
   activeSegmentPositions: Cartesian3[];
   activeSegmentColor: Color;
   labelText: string;
   labelPosition: Cartesian3 | undefined;
-  groundTargetPosition: Cartesian3 | undefined;
   isFollowed: boolean;
   visibleSegmentCount: number;
 };
 
 const VISUAL_TERRAIN_CLEARANCE_METERS = 8;
+const CURTAIN_DURATION_MS = 30_000;
+
+// A local texture: opaque at the recent upper edge, transparent at ground/old edge.
+function createCurtainTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const context = canvas.getContext("2d")!;
+  const age = context.createLinearGradient(0, 0, 128, 0);
+  age.addColorStop(0, "rgba(255,255,255,0)");
+  age.addColorStop(1, "rgba(255,255,255,1)");
+  context.fillStyle = age;
+  context.fillRect(0, 0, 128, 128);
+  context.globalCompositeOperation = "destination-in";
+  const height = context.createLinearGradient(0, 0, 0, 128);
+  height.addColorStop(0, "rgba(255,255,255,1)");
+  height.addColorStop(1, "rgba(255,255,255,0)");
+  context.fillStyle = height;
+  context.fillRect(0, 0, 128, 128);
+  return canvas;
+}
 declare global {
   interface Window {
     CESIUM_BASE_URL?: string;
@@ -165,6 +189,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   const chaseRef = useRef({ enabled: false, heading: 0, pitch: -0.75 });
   const orbitalRef = useRef({ enabled: true, speed: 0 });
   const cameraInteractionRef = useRef(false);
+  const curtainTextureRef = useRef<HTMLCanvasElement | null>(null);
 
   const [isReady, setIsReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -373,17 +398,19 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
       for (const renderData of renderDataRef.current.values()) {
         const result = getCurrentFlightPosition(renderData, timelineMs, mode, start);
         const isFollowed = renderData.flight.id === followedId;
+        if (!isFollowed || !result) {
+          renderData.curtain.show = false;
+          renderData.curtainElapsed = Number.NaN;
+        }
 
         if (!result) {
           renderData.marker.show = false;
           renderData.label.show = false;
           renderData.beam.show = false;
-          renderData.groundTarget.show = false;
           renderData.activeSegment.show = false;
           renderData.beamPositions.length = 0;
           renderData.activeSegmentPositions.length = 0;
           renderData.labelPosition = undefined;
-          renderData.groundTargetPosition = undefined;
 
           for (const segment of renderData.segmentEntities) {
             segment.show = false;
@@ -418,8 +445,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
         renderData.visibleSegmentCount = nextVisibleCount;
         renderData.marker.show = true;
         renderData.label.show = showLabels;
-        renderData.beam.show = true;
-        renderData.groundTarget.show = isFollowed;
+        renderData.beam.show = !isFollowed;
         renderData.activeSegment.show = true;
 
         renderData.activeSegmentColor =
@@ -457,13 +483,54 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
         renderData.labelPosition = result.position;
         renderData.labelText = `${renderData.flight.flight.pilotName ?? renderData.flight.flight.filename}\n${Math.round(result.current.point.altitude)} m`;
         renderData.beamPositions.splice(0, renderData.beamPositions.length, groundPosition, result.position);
-        renderData.groundTargetPosition = groundPosition;
         renderData.activeSegmentPositions.splice(
           0,
           renderData.activeSegmentPositions.length,
           renderData.positions[Math.max(0, result.current.index - 1)],
           result.position,
         );
+
+        if (isFollowed && renderData.curtain.wall) {
+          const elapsed = result.current.point.elapsedMs;
+          // Dynamic wall geometry updates synchronously, avoiding async replacement gaps.
+          // Keep its front edge attached to the marker, with at most 31 samples.
+          if (elapsed !== renderData.curtainElapsed) {
+            const positions: Cartesian3[] = [];
+            const minimumHeights: number[] = [];
+            const maximumHeights: number[] = [];
+            let previousLongitude: number | undefined;
+            let previousLatitude: number | undefined;
+            const begin = Math.max(0, elapsed - CURTAIN_DURATION_MS);
+            const samples = Math.min(30, Math.ceil((elapsed - begin) / 1000));
+            for (let sample = 0; sample <= samples && samples > 0; sample += 1) {
+              const fix = findPointAtElapsed(renderData.flight.flight.points, begin + (elapsed - begin) * sample / samples);
+              const top = interpolateRenderPosition(Cesium, renderData.flight.flight, renderData.positions, fix);
+              if (!top) continue;
+              const right = fix.index;
+              const left = Math.max(0, right - 1);
+              const points = renderData.flight.flight.points;
+              const fraction = Math.max(0, Math.min(1, (fix.point.elapsedMs - points[left].elapsedMs) / Math.max(1, points[right].elapsedMs - points[left].elapsedMs)));
+              const ground = renderData.groundHeights[left] + (renderData.groundHeights[right] - renderData.groundHeights[left]) * fraction;
+              const cartographic = Cesium.Cartographic.fromCartesian(top);
+              // WallGeometry discards repeated horizontal positions, even if altitude changes.
+              if (previousLongitude !== undefined && previousLatitude !== undefined &&
+                Math.abs(cartographic.longitude - previousLongitude) < 1e-8 &&
+                Math.abs(cartographic.latitude - previousLatitude) < 1e-8) continue;
+              previousLongitude = cartographic.longitude;
+              previousLatitude = cartographic.latitude;
+              positions.push(top);
+              minimumHeights.push(ground);
+              maximumHeights.push(Math.max(ground, cartographic.height));
+            }
+            renderData.curtainPositions.splice(0, renderData.curtainPositions.length, ...positions);
+            renderData.curtainMinimumHeights.splice(0, renderData.curtainMinimumHeights.length, ...minimumHeights);
+            renderData.curtainMaximumHeights.splice(0, renderData.curtainMaximumHeights.length, ...maximumHeights);
+            renderData.curtain.show = positions.length >= 2 && maximumHeights.some((height, index) => height > minimumHeights[index]);
+            renderData.curtainElapsed = elapsed;
+          }
+          // Retain the original altitude cue until a non-degenerate curtain can form.
+          renderData.beam.show = !renderData.curtain.show;
+        }
 
         if (isFollowed) {
           updateCamera(result.position);
@@ -557,6 +624,25 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
         },
       });
       const beamPositions: Cartesian3[] = [];
+      curtainTextureRef.current ??= createCurtainTexture();
+      const curtainPositions: Cartesian3[] = [];
+      const curtainMinimumHeights: number[] = [];
+      const curtainMaximumHeights: number[] = [];
+      const curtain = viewer.entities.add({
+        name: `${comparedFlight.flight.pilotName ?? comparedFlight.flight.filename} fading altitude curtain`,
+        show: false,
+        wall: {
+          positions: new Cesium.CallbackProperty(() => curtainPositions, false),
+          minimumHeights: new Cesium.CallbackProperty(() => curtainMinimumHeights, false),
+          maximumHeights: new Cesium.CallbackProperty(() => curtainMaximumHeights, false),
+          outline: false,
+          material: new Cesium.ImageMaterialProperty({
+            image: curtainTextureRef.current,
+            transparent: true,
+            color: Cesium.Color.fromCssColorString(comparedFlight.color).withAlpha(0.3),
+          }),
+        },
+      });
       let beamIsFollowed = false;
       const beam = viewer.entities.add({
         name: `${comparedFlight.flight.pilotName ?? comparedFlight.flight.filename} altitude projection beam`,
@@ -571,20 +657,6 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
           width: 2,
         },
       });
-      let groundTargetPosition: Cartesian3 | undefined;
-      const groundTarget = viewer.entities.add({
-        name: `${comparedFlight.flight.pilotName ?? comparedFlight.flight.filename} ground projection target`,
-        show: false,
-        position: new Cesium.CallbackPositionProperty(() => groundTargetPosition, false),
-        ellipse: {
-          semiMajorAxis: 38,
-          semiMinorAxis: 38,
-          material: Cesium.Color.fromCssColorString(comparedFlight.color).withAlpha(0.16),
-          outline: true,
-          outlineColor: Cesium.Color.WHITE.withAlpha(0.7),
-          outlineWidth: 2,
-        },
-      });
 
       return {
         flight: comparedFlight,
@@ -595,7 +667,11 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
         marker,
         label,
         beam,
-        groundTarget,
+        curtain,
+        curtainPositions,
+        curtainMinimumHeights,
+        curtainMaximumHeights,
+        curtainElapsed: Number.NaN,
         beamPositions,
         get activeSegmentColor() {
           return activeSegmentColor;
@@ -614,12 +690,6 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
         },
         set labelPosition(position: Cartesian3 | undefined) {
           labelPosition = position;
-        },
-        get groundTargetPosition() {
-          return groundTargetPosition;
-        },
-        set groundTargetPosition(position: Cartesian3 | undefined) {
-          groundTargetPosition = position;
         },
         get isFollowed() {
           return beamIsFollowed;
@@ -787,7 +857,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
           viewerInstance.entities.remove(renderData.label);
           viewerInstance.entities.remove(renderData.activeSegment);
           viewerInstance.entities.remove(renderData.beam);
-          viewerInstance.entities.remove(renderData.groundTarget);
+          viewerInstance.entities.remove(renderData.curtain);
           renderDataRef.current.delete(id);
         }
       }
@@ -1079,6 +1149,9 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   }
 
   function handleSeek(elapsedMs: number) {
+    for (const data of renderDataRef.current.values()) {
+      data.curtainElapsed = Number.NaN;
+    }
     elapsedRef.current = Math.max(0, Math.min(timelineDuration, elapsedMs));
     lastFrameRef.current = null;
     updateFlightEntities(elapsedRef.current);
