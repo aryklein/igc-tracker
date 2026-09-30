@@ -48,6 +48,8 @@ type FlightRenderData = {
 };
 
 const VISUAL_TERRAIN_CLEARANCE_METERS = 8;
+const DEFAULT_CAMERA_RANGE_METERS = 1000;
+const MIN_CAMERA_RANGE_METERS = 300;
 const CURTAIN_DURATION_MS = 30_000;
 
 // Fade through the middle, then strengthen the ground edge; older track stays transparent.
@@ -187,7 +189,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
   const speedRef = useRef(8);
   const followedFlightIdRef = useRef<string | null>(followedFlightId);
   const syncModeRef = useRef<FlightSyncMode>(syncMode);
-  const orbitRef = useRef({ heading: 0, pitch: -0.75, range: 2200 });
+  const orbitRef = useRef({ heading: 0, pitch: -0.75, range: DEFAULT_CAMERA_RANGE_METERS });
   const chaseRef = useRef({ enabled: false, heading: 0, pitch: -0.75 });
   const orbitalRef = useRef({ enabled: true, speed: 0 });
   const cameraInteractionRef = useRef(false);
@@ -965,7 +967,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
 
         if (pinchDistance !== null && previousPinchDistance !== null && pinchDistance > 0) {
           const zoomFactor = Math.max(0.75, Math.min(1.25, previousPinchDistance / pinchDistance));
-          orbitRef.current.range = Math.max(300, Math.min(35_000, orbitRef.current.range * zoomFactor));
+          orbitRef.current.range = Math.max(MIN_CAMERA_RANGE_METERS, Math.min(35_000, orbitRef.current.range * zoomFactor));
           updateCameraFromFollowedFlight();
         }
 
@@ -1004,7 +1006,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
     function handleWheel(event: WheelEvent) {
       event.preventDefault();
       const zoomFactor = event.deltaY > 0 ? 1.12 : 0.88;
-      orbitRef.current.range = Math.max(300, Math.min(35_000, orbitRef.current.range * zoomFactor));
+      orbitRef.current.range = Math.max(MIN_CAMERA_RANGE_METERS, Math.min(35_000, orbitRef.current.range * zoomFactor));
       updateCameraFromFollowedFlight();
     }
 
