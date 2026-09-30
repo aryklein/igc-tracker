@@ -34,8 +34,10 @@ type FlightRenderData = {
   label: Entity;
   beam: Entity;
   curtain: Entity;
+  curtainPositions: Cartesian3[];
+  curtainMinimumHeights: number[];
+  curtainMaximumHeights: number[];
   curtainElapsed: number;
-  curtainUpdatedAt: number;
   groundTarget: Entity;
   beamPositions: Cartesian3[];
   activeSegmentPositions: Cartesian3[];
@@ -496,10 +498,9 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
 
         if (isFollowed && renderData.curtain.wall) {
           const elapsed = result.current.point.elapsedMs;
-          const now = performance.now();
-          // Bound geometry updates to 8 Hz; seeks/backwards playback update immediately.
-          const discontinuity = !Number.isFinite(renderData.curtainElapsed) || elapsed < renderData.curtainElapsed || elapsed - renderData.curtainElapsed > 5000 || elapsed === renderData.flight.flight.durationMs;
-          if (elapsed !== renderData.curtainElapsed && (discontinuity || now - renderData.curtainUpdatedAt >= 125)) {
+          // Dynamic wall geometry updates synchronously, avoiding async replacement gaps.
+          // Keep its front edge attached to the marker, with at most 31 samples.
+          if (elapsed !== renderData.curtainElapsed) {
             const positions: Cartesian3[] = [];
             const minimumHeights: number[] = [];
             const maximumHeights: number[] = [];
@@ -527,12 +528,11 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
               minimumHeights.push(ground);
               maximumHeights.push(Math.max(ground, cartographic.height));
             }
-            renderData.curtain.wall.positions = new Cesium.ConstantProperty(positions);
-            renderData.curtain.wall.minimumHeights = new Cesium.ConstantProperty(minimumHeights);
-            renderData.curtain.wall.maximumHeights = new Cesium.ConstantProperty(maximumHeights);
+            renderData.curtainPositions.splice(0, renderData.curtainPositions.length, ...positions);
+            renderData.curtainMinimumHeights.splice(0, renderData.curtainMinimumHeights.length, ...minimumHeights);
+            renderData.curtainMaximumHeights.splice(0, renderData.curtainMaximumHeights.length, ...maximumHeights);
             renderData.curtain.show = positions.length >= 2 && maximumHeights.some((height, index) => height > minimumHeights[index]);
             renderData.curtainElapsed = elapsed;
-            renderData.curtainUpdatedAt = now;
           }
           // Retain the original altitude cue until a non-degenerate curtain can form.
           renderData.beam.show = !renderData.curtain.show;
@@ -631,13 +631,16 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
       });
       const beamPositions: Cartesian3[] = [];
       curtainTextureRef.current ??= createCurtainTexture();
+      const curtainPositions: Cartesian3[] = [];
+      const curtainMinimumHeights: number[] = [];
+      const curtainMaximumHeights: number[] = [];
       const curtain = viewer.entities.add({
         name: `${comparedFlight.flight.pilotName ?? comparedFlight.flight.filename} fading altitude curtain`,
         show: false,
         wall: {
-          positions: [],
-          minimumHeights: [],
-          maximumHeights: [],
+          positions: new Cesium.CallbackProperty(() => curtainPositions, false),
+          minimumHeights: new Cesium.CallbackProperty(() => curtainMinimumHeights, false),
+          maximumHeights: new Cesium.CallbackProperty(() => curtainMaximumHeights, false),
           outline: false,
           material: new Cesium.ImageMaterialProperty({
             image: curtainTextureRef.current,
@@ -685,8 +688,10 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
         label,
         beam,
         curtain,
+        curtainPositions,
+        curtainMinimumHeights,
+        curtainMaximumHeights,
         curtainElapsed: Number.NaN,
-        curtainUpdatedAt: 0,
         groundTarget,
         beamPositions,
         get activeSegmentColor() {
