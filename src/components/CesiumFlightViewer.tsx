@@ -63,9 +63,9 @@ function createCurtainTexture() {
   context.fillRect(0, 0, 128, 128);
   context.globalCompositeOperation = "destination-in";
   const height = context.createLinearGradient(0, 0, 0, 128);
-  height.addColorStop(0, "rgba(255,255,255,0.6)");
-  height.addColorStop(0.55, "rgba(255,255,255,0.08)");
-  height.addColorStop(0.85, "rgba(255,255,255,0.12)");
+  height.addColorStop(0, "rgba(255,255,255,0.5)");
+  height.addColorStop(0.55, "rgba(255,255,255,0.066667)");
+  height.addColorStop(0.85, "rgba(255,255,255,0.1)");
   height.addColorStop(1, "rgba(255,255,255,1)");
   context.fillStyle = height;
   context.fillRect(0, 0, 128, 128);
@@ -641,7 +641,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
           material: new Cesium.ImageMaterialProperty({
             image: curtainTextureRef.current,
             transparent: true,
-            color: Cesium.Color.fromCssColorString(comparedFlight.color).withAlpha(0.5),
+            color: Cesium.Color.fromCssColorString(comparedFlight.color).withAlpha(0.6),
           }),
         },
       });
