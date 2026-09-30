@@ -38,13 +38,11 @@ type FlightRenderData = {
   curtainMinimumHeights: number[];
   curtainMaximumHeights: number[];
   curtainElapsed: number;
-  groundTarget: Entity;
   beamPositions: Cartesian3[];
   activeSegmentPositions: Cartesian3[];
   activeSegmentColor: Color;
   labelText: string;
   labelPosition: Cartesian3 | undefined;
-  groundTargetPosition: Cartesian3 | undefined;
   isFollowed: boolean;
   visibleSegmentCount: number;
 };
@@ -409,12 +407,10 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
           renderData.marker.show = false;
           renderData.label.show = false;
           renderData.beam.show = false;
-          renderData.groundTarget.show = false;
           renderData.activeSegment.show = false;
           renderData.beamPositions.length = 0;
           renderData.activeSegmentPositions.length = 0;
           renderData.labelPosition = undefined;
-          renderData.groundTargetPosition = undefined;
 
           for (const segment of renderData.segmentEntities) {
             segment.show = false;
@@ -450,7 +446,6 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
         renderData.marker.show = true;
         renderData.label.show = showLabels;
         renderData.beam.show = !isFollowed;
-        renderData.groundTarget.show = isFollowed;
         renderData.activeSegment.show = true;
 
         renderData.activeSegmentColor =
@@ -488,7 +483,6 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
         renderData.labelPosition = result.position;
         renderData.labelText = `${renderData.flight.flight.pilotName ?? renderData.flight.flight.filename}\n${Math.round(result.current.point.altitude)} m`;
         renderData.beamPositions.splice(0, renderData.beamPositions.length, groundPosition, result.position);
-        renderData.groundTargetPosition = groundPosition;
         renderData.activeSegmentPositions.splice(
           0,
           renderData.activeSegmentPositions.length,
@@ -663,20 +657,6 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
           width: 2,
         },
       });
-      let groundTargetPosition: Cartesian3 | undefined;
-      const groundTarget = viewer.entities.add({
-        name: `${comparedFlight.flight.pilotName ?? comparedFlight.flight.filename} ground projection target`,
-        show: false,
-        position: new Cesium.CallbackPositionProperty(() => groundTargetPosition, false),
-        ellipse: {
-          semiMajorAxis: 38,
-          semiMinorAxis: 38,
-          material: Cesium.Color.fromCssColorString(comparedFlight.color).withAlpha(0.16),
-          outline: true,
-          outlineColor: Cesium.Color.WHITE.withAlpha(0.7),
-          outlineWidth: 2,
-        },
-      });
 
       return {
         flight: comparedFlight,
@@ -692,7 +672,6 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
         curtainMinimumHeights,
         curtainMaximumHeights,
         curtainElapsed: Number.NaN,
-        groundTarget,
         beamPositions,
         get activeSegmentColor() {
           return activeSegmentColor;
@@ -711,12 +690,6 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
         },
         set labelPosition(position: Cartesian3 | undefined) {
           labelPosition = position;
-        },
-        get groundTargetPosition() {
-          return groundTargetPosition;
-        },
-        set groundTargetPosition(position: Cartesian3 | undefined) {
-          groundTargetPosition = position;
         },
         get isFollowed() {
           return beamIsFollowed;
@@ -885,7 +858,6 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
           viewerInstance.entities.remove(renderData.activeSegment);
           viewerInstance.entities.remove(renderData.beam);
           viewerInstance.entities.remove(renderData.curtain);
-          viewerInstance.entities.remove(renderData.groundTarget);
           renderDataRef.current.delete(id);
         }
       }
