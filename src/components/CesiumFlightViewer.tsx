@@ -641,7 +641,7 @@ export function CesiumFlightViewer({ flights, followedFlightId, isPanelCollapsed
           material: new Cesium.ImageMaterialProperty({
             image: curtainTextureRef.current,
             transparent: true,
-            color: Cesium.Color.fromCssColorString(comparedFlight.color).withAlpha(0.6),
+            color: Cesium.Color.fromCssColorString("#ff00ff").withAlpha(0.7),
           }),
         },
       });
